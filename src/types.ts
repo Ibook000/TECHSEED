@@ -232,6 +232,7 @@ export interface DashboardStats {
   totalRegistered: number;
   aiCompleted: number;
   aiRecommended: number;
+  pendingReviewCount: number;
   waitingManualInterview?: number;
   manualPassed?: number;
   manualRejected?: number;

@@ -326,6 +326,13 @@ export class RecruitmentService {
     const totalRegistered = candidates.length;
     const aiCompleted = candidates.filter(c => c.aiScore !== undefined).length;
     const aiRecommended = candidates.filter(c => c.aiRecommendation === 'S' || c.aiRecommendation === 'A' || c.aiRecommendation === 'B').length;
+    const pendingReviewCount = candidates.filter(c => [
+      'AI_COMPLETED',
+      'AI_RECOMMENDED',
+      'AI_NOT_RECOMMENDED',
+      'WAITING_MANUAL_INTERVIEW',
+      'MANUAL_INTERVIEWING',
+    ].includes(c.status)).length;
 
     const admittedCount = candidates.filter(c =>
       ['ADMITTED', 'MANUAL_PASSED', 'GROUP_JOIN_CONFIRMED'].includes(c.status)
@@ -381,6 +388,7 @@ export class RecruitmentService {
       totalRegistered,
       aiCompleted,
       aiRecommended,
+      pendingReviewCount,
       admittedCount,
       rejectedCount,
       qrAvailable,

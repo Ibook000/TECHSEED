@@ -111,13 +111,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-        <div className="rounded-[12px] border border-zinc-200 bg-white p-3.5 shadow-xs">
+        <div
+          onClick={() => onFilterPreset?.('NEEDS_REVIEW')}
+          className="cursor-pointer rounded-[12px] border border-sky-200 bg-sky-50/60 p-3.5 transition-all hover:border-sky-300 hover:bg-sky-50 shadow-xs"
+        >
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">AI完成</span>
-            <CheckCircle className="h-3.5 w-3.5 text-amber-500" />
+            <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">待人工审核</span>
+            <CheckCircle className="h-3.5 w-3.5 text-sky-600" />
           </div>
-          <div className="mt-2 font-mono text-2xl font-bold text-amber-600">
-            {stats.aiCompleted}
+          <div className="mt-2 font-mono text-2xl font-bold text-sky-700">
+            {stats.pendingReviewCount}
           </div>
         </div>
 

@@ -157,6 +157,15 @@ export const CandidateList: React.FC<CandidateListProps> = ({
 
     // Presets
     if (selectedPreset === 'S') return c.aiRecommendation === 'S';
+    if (selectedPreset === 'NEEDS_REVIEW') {
+      return [
+        'AI_COMPLETED',
+        'AI_RECOMMENDED',
+        'AI_NOT_RECOMMENDED',
+        'WAITING_MANUAL_INTERVIEW',
+        'MANUAL_INTERVIEWING',
+      ].includes(c.status);
+    }
     if (selectedPreset === 'AI_RECOMMENDED') {
       return ['S', 'A', 'B'].includes(c.aiRecommendation || '') || c.status === 'AI_RECOMMENDED';
     }
@@ -314,6 +323,7 @@ export const CandidateList: React.FC<CandidateListProps> = ({
         <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-[0.2em] mr-2 font-bold">Presets:</span>
         {[
           { id: 'ALL', label: '全部候选人' },
+          { id: 'NEEDS_REVIEW', label: '待人工审核' },
           { id: 'S', label: 'S 级较高分' },
           { id: 'ZERO_FOUNDATION', label: '高潜力 · 零基础' },
           { id: 'ADMITTED', label: '已正式录取' },
