@@ -52,7 +52,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
             <span className="h-1.5 w-1.5 rounded-full bg-[#EAB308] animate-pulse" />
             <span className="font-bold text-zinc-900 tracking-wider">TECHSEED 2026</span>
             <span className="text-zinc-300">/</span>
-            <span>电技术部纳新</span>
+            <span>学生会技术部招新</span>
           </div>
 
           {/* Hero Headline */}
