@@ -1,18 +1,28 @@
-export type CandidateStatus =
-  | 'REGISTERED'
-  | 'AI_INTERVIEWING'
-  | 'AI_COMPLETED'
-  | 'AI_RECOMMENDED'
-  | 'AI_NOT_RECOMMENDED'
-  | 'WAITING_MANUAL_INTERVIEW'
-  | 'MANUAL_INTERVIEWING'
-  | 'MANUAL_PASSED'
-  | 'MANUAL_REJECTED'
-  | 'MANUAL_WAITLIST'
-  | 'QR_AVAILABLE'
-  | 'GROUP_JOIN_PENDING'
-  | 'GROUP_JOIN_CONFIRMED'
-  | 'ADMITTED';
+export const CANDIDATE_STATUSES = [
+  'REGISTERED',
+  'AI_INTERVIEWING',
+  'AI_COMPLETED',
+  'AI_RECOMMENDED',
+  'AI_NOT_RECOMMENDED',
+  'WAITING_MANUAL_INTERVIEW',
+  'MANUAL_INTERVIEWING',
+  'MANUAL_PASSED',
+  'MANUAL_REJECTED',
+  'MANUAL_WAITLIST',
+  'QR_AVAILABLE',
+  'GROUP_JOIN_PENDING',
+  'GROUP_JOIN_CONFIRMED',
+  'ADMITTED',
+] as const;
+
+export type CandidateStatus = (typeof CANDIDATE_STATUSES)[number];
+
+export const REGISTRATION_CONSENT_VERSION = 'registration-consent-v1';
+
+export interface CandidatePrivacyConsent {
+  version: string;
+  acceptedAt: string;
+}
 
 export type AIRecommendationGrade = 'S' | 'A' | 'B' | 'C';
 
@@ -70,6 +80,7 @@ export interface Candidate {
   id: string;
   batchId: string;
   profile: CandidateProfile;
+  privacyConsent?: CandidatePrivacyConsent;
   status: CandidateStatus;
   aiScore?: number;
   aiRecommendation?: AIRecommendationGrade;

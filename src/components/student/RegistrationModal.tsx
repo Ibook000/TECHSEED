@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Sparkles, AlertCircle, Check } from 'lucide-react';
-import { CandidateProfile, TechnicalFoundation, TechDirection } from '../../types.js';
+import { CandidateProfile, TechnicalFoundation, TechDirection, REGISTRATION_CONSENT_VERSION } from '../../types.js';
 import { PgyMascot } from '../PgyMascot.js';
 
 interface RegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (profile: CandidateProfile) => Promise<void>;
+  onSubmit: (profile: CandidateProfile, privacyConsentVersion: string) => Promise<void>;
 }
 
 const FOUNDATIONS: TechnicalFoundation[] = [
@@ -43,8 +43,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [technicalFoundation, setTechnicalFoundation] = useState<TechnicalFoundation>('了解一点');
   const [techDirection, setTechDirection] = useState<TechDirection>('后端');
   const [selfIntro, setSelfIntro] = useState('');
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) setPrivacyAcknowledged(false);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -57,6 +62,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
     if (!selfIntro.trim() || selfIntro.trim().length < 8) {
       setError('请在自我介绍中多写两句你折腾过的小事或为什么对技术感兴趣（至少8个字）');
+      return;
+    }
+
+    if (!privacyAcknowledged) {
+      setError('请先阅读并确认报名信息使用说明');
       return;
     }
 
@@ -74,7 +84,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         technicalFoundation,
         techDirection,
         selfIntro: selfIntro.trim(),
-      });
+      }, REGISTRATION_CONSENT_VERSION);
       onClose();
     } catch (err: any) {
       setError(err.message || '提交失败，请重试');
@@ -260,6 +270,21 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 className="mt-1.5 w-full rounded-[10px] border border-zinc-200 bg-zinc-50/60 p-2.5 sm:p-3 text-xs font-sans text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 focus:outline-none shadow-xs"
               />
             </div>
+
+            <label className="flex items-start gap-2.5 rounded-[10px] border border-amber-200 bg-amber-50/70 p-3 font-sans text-[11px] leading-relaxed text-zinc-700">
+              <input
+                type="checkbox"
+                required
+                checked={privacyAcknowledged}
+                onChange={e => setPrivacyAcknowledged(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-amber-500"
+              />
+              <span>
+                <strong className="text-zinc-900">报名信息使用说明：</strong>
+                为完成本次招新，系统会保存你提交的个人信息和 AI 面试问答，用于招新审核与联系；若管理员配置外部 AI 服务，面试内容会发送给所配置的服务商处理。请勿提交与报名无关的敏感信息。
+                <span className="mt-1 block font-medium">我已阅读并知悉以上信息。</span>
+              </span>
+            </label>
           </div>
 
           {/* Actions */}

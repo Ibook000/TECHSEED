@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import {
   Users,
   QrCode,
@@ -11,18 +11,11 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { StudentNavbar } from './components/StudentNavbar.js';
-import { AdminNavbar } from './components/AdminNavbar.js';
 import { StudentHome } from './components/student/StudentHome.js';
 import { RegistrationModal } from './components/student/RegistrationModal.js';
 import { AIInterviewTerminal } from './components/student/AIInterviewTerminal.js';
 import { CandidateStatusView } from './components/student/CandidateStatusView.js';
 import { StatusQueryModal } from './components/student/StatusQueryModal.js';
-import { CandidateList } from './components/admin/CandidateList.js';
-import { CandidateDetailModal } from './components/admin/CandidateDetailModal.js';
-import { QRCodeManager } from './components/admin/QRCodeManager.js';
-import { PromptManager } from './components/admin/PromptManager.js';
-import { AISettingsManager } from './components/admin/AISettingsManager.js';
-import { AdminLoginModal } from './components/admin/AdminLoginModal.js';
 import {
   getAdminToken,
   getStudentAccessToken,
@@ -31,7 +24,6 @@ import {
   saveStudentSession,
   STUDENT_CANDIDATE_ID_KEY,
 } from './lib/auth.js';
-import { AdminLoginPage } from './components/admin/AdminLoginPage.js';
 import {
   Candidate,
   CandidateProfile,
@@ -39,7 +31,17 @@ import {
   DashboardStats,
   RecruitmentBatch,
   AdminUser,
+  REGISTRATION_CONSENT_VERSION,
 } from './types.js';
+
+const AdminNavbar = lazy(() => import('./components/AdminNavbar.js').then(module => ({ default: module.AdminNavbar })));
+const AdminLoginPage = lazy(() => import('./components/admin/AdminLoginPage.js').then(module => ({ default: module.AdminLoginPage })));
+const CandidateList = lazy(() => import('./components/admin/CandidateList.js').then(module => ({ default: module.CandidateList })));
+const CandidateDetailModal = lazy(() => import('./components/admin/CandidateDetailModal.js').then(module => ({ default: module.CandidateDetailModal })));
+const QRCodeManager = lazy(() => import('./components/admin/QRCodeManager.js').then(module => ({ default: module.QRCodeManager })));
+const PromptManager = lazy(() => import('./components/admin/PromptManager.js').then(module => ({ default: module.PromptManager })));
+const AISettingsManager = lazy(() => import('./components/admin/AISettingsManager.js').then(module => ({ default: module.AISettingsManager })));
+const AdminLoginModal = lazy(() => import('./components/admin/AdminLoginModal.js').then(module => ({ default: module.AdminLoginModal })));
 
 export default function App() {
   // Top Level Navigation & URL Routing sync
@@ -261,11 +263,11 @@ export default function App() {
   }, [activeBatchId]);
 
   // Handle Candidate Registration
-  const handleRegister = async (profile: CandidateProfile) => {
+  const handleRegister = async (profile: CandidateProfile, privacyConsentVersion: string) => {
     const res = await fetch('/api/candidates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile, batchId: activeBatchId }),
+      body: JSON.stringify({ profile, batchId: activeBatchId, privacyConsentVersion }),
     });
 
     if (!res.ok) {
@@ -432,13 +434,15 @@ export default function App() {
   // Dedicated Admin Gatekeeper: If visiting /admin without authenticated admin user, show strict login page
   if (currentView === 'admin' && !adminUser) {
     return (
-      <AdminLoginPage
-        onLoginSuccess={user => {
-          setAdminUser(user);
-          loadCandidatesAndStats(activeBatchId);
-        }}
-        onBackToStudent={() => navigateToView('student')}
-      />
+      <Suspense fallback={<div className="min-h-screen grid place-items-center text-sm text-zinc-500">正在加载管理入口…</div>}>
+        <AdminLoginPage
+          onLoginSuccess={user => {
+            setAdminUser(user);
+            loadCandidatesAndStats(activeBatchId);
+          }}
+          onBackToStudent={() => navigateToView('student')}
+        />
+      </Suspense>
     );
   }
 
@@ -473,18 +477,20 @@ export default function App() {
           onGoHome={() => setStudentScreen('home')}
         />
       ) : (
-        <AdminNavbar
-          adminUser={adminUser}
-          onAdminLogout={() => {
-            setAdminUser(null);
-            clearAdminSession();
-            setCandidates([]);
-            setStats(null);
-            navigateToView('student');
-          }}
-          onNavigateToStudent={() => navigateToView('student')}
-          onClearTestData={handleClearTestData}
-        />
+        <Suspense fallback={<div className="h-16 border-b border-zinc-200 bg-white" />}>
+          <AdminNavbar
+            adminUser={adminUser}
+            onAdminLogout={() => {
+              setAdminUser(null);
+              clearAdminSession();
+              setCandidates([]);
+              setStats(null);
+              navigateToView('student');
+            }}
+            onNavigateToStudent={() => navigateToView('student')}
+            onClearTestData={handleClearTestData}
+          />
+        </Suspense>
       )}
 
       {/* Main View Container */}
@@ -638,6 +644,7 @@ export default function App() {
             </div>
 
             {/* Admin Content Area */}
+            <Suspense fallback={<div className="py-8 text-sm text-zinc-500">正在加载管理面板…</div>}>
             {adminTab === 'candidates' && (
               <CandidateList
                 candidates={candidates}
@@ -658,6 +665,7 @@ export default function App() {
 
             {adminTab === 'prompts' && <PromptManager />}
             {adminTab === 'ai-settings' && <AISettingsManager />}
+            </Suspense>
           </div>
         )}
       </main>
@@ -701,21 +709,29 @@ export default function App() {
         }}
       />
 
-      <AdminLoginModal
-        isOpen={isAdminLoginOpen}
-        onClose={() => setIsAdminLoginOpen(false)}
-        onLoginSuccess={user => {
-          setAdminUser(user);
-          setCurrentView('admin');
-        }}
-      />
+      {isAdminLoginOpen && (
+        <Suspense fallback={null}>
+          <AdminLoginModal
+            isOpen
+            onClose={() => setIsAdminLoginOpen(false)}
+            onLoginSuccess={user => {
+              setAdminUser(user);
+              setCurrentView('admin');
+            }}
+          />
+        </Suspense>
+      )}
 
-      <CandidateDetailModal
-        candidateId={selectedCandidateId}
-        onClose={() => setSelectedCandidateId(null)}
-        currentUser={adminUser}
-        onRefreshList={() => loadCandidatesAndStats(activeBatchId)}
-      />
+      {selectedCandidateId && (
+        <Suspense fallback={null}>
+          <CandidateDetailModal
+            candidateId={selectedCandidateId}
+            onClose={() => setSelectedCandidateId(null)}
+            currentUser={adminUser}
+            onRefreshList={() => loadCandidatesAndStats(activeBatchId)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   DashboardStats,
   CapabilityScores,
   WeChatGroupQR,
+  CandidatePrivacyConsent,
 } from '../../src/types.js';
 import { AIService } from './ai.js';
 
@@ -33,7 +34,11 @@ export class RecruitmentService {
   /**
    * Register a new candidate for recruitment
    */
-  public static registerCandidate(profile: CandidateProfile, batchId?: string): { candidate: Candidate; isNew: boolean } {
+  public static registerCandidate(
+    profile: CandidateProfile,
+    batchId: string | undefined,
+    privacyConsent: CandidatePrivacyConsent,
+  ): { candidate: Candidate; isNew: boolean } {
     const effectiveBatchId = batchId || 'default';
 
     // Check if student already registered
@@ -51,6 +56,7 @@ export class RecruitmentService {
       id: candidateId,
       batchId: effectiveBatchId,
       profile,
+      privacyConsent,
       status: 'REGISTERED',
       registeredAt: now,
       updatedAt: now,

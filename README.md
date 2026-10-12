@@ -1,5 +1,7 @@
 # TECHSEED AI 招新系统
 
+[![CI](https://github.com/Ibook000/TECHSEED/actions/workflows/ci.yml/badge.svg)](https://github.com/Ibook000/TECHSEED/actions/workflows/ci.yml)
+
 xxxxx学院学生会技术部 AI 招新系统（Tech Dept AI Recruitment System）。
 
 单页应用实现完整招新流水线：学生注册 → AI 面试 → 智能评估 → 管理端审核 → 微信群准入。
@@ -30,18 +32,31 @@ xxxxx学院学生会技术部 AI 招新系统（Tech Dept AI Recruitment System�
 | 数据库 | JSON 文件数据库（`data/db.json`，无外部依赖） |
 | AI | OpenAI 兼容 Chat Completions 接口 + 启发式评分引擎 |
 
+## 架构概览
+
+```mermaid
+flowchart LR
+  browser["浏览器<br/>学生端与管理端"] --> api[Express API]
+  api --> json["本地 JSON 数据库<br/>适合单实例部署"]
+  api --> ai[AI 服务]
+  ai --> provider[可选的 OpenAI 兼容接口]
+  ai --> fallback["内置启发式评分<br/>接口不可用时降级"]
+```
+
+应用默认使用单进程和本地 JSON 文件保存数据。多实例部署或高并发招生前，应先迁移到 SQLite 或托管数据库，并配置共享限流与备份。
+
 ## 快速开始
 
 ### 环境要求
 
-- Node.js 18+
+- Node.js 22.12+（建议使用仍在维护期的 LTS 版本）
 - npm（本项目的包管理器）
 
 ### 安装与启动
 
 ```bash
-# 1. 安装依赖
-npm install
+# 1. 按 lockfile 安装依赖
+npm ci
 
 # 2. 配置环境变量；新数据库初始化前必须在 .env 中设置 ADMIN_DEFAULT_PASSWORD
 copy .env.example .env
@@ -59,10 +74,15 @@ npm run dev     # 开发模式（tsx server.ts，端口 3000）
 npm run build   # 构建产物：vite build + esbuild 打包 server.ts -> dist/server.cjs
 npm run start   # 运行构建产物 node dist/server.cjs
 npm run lint    # TypeScript 类型检查（tsc --noEmit）
+npm run audit   # 检查已知依赖漏洞（npm audit）
 npm run clean   # 清理构建产物
 ```
 
-> 提交前请同时运行 `npm run lint` 与 `npm run build` 验证。
+推送到 `main` 或提交 Pull Request 时，GitHub Actions 会在 Node.js 22 和 24 上执行依赖审计、类型检查与生产构建。
+
+## 参与贡献
+
+欢迎提交问题反馈和 Pull Request。首次贡献请先阅读[贡献指南](CONTRIBUTING.md)；安全问题请参考[安全政策](SECURITY.md)。
 
 ## 环境变量
 
@@ -144,6 +164,7 @@ pm2 reload ecosystem.config.cjs --update-env
 
 - 生产环境通过 `.env` 提供配置（PM2 仅注入 `NODE_ENV` 与 `PORT`，其余由 dotenv 从进程工作目录读取）
 - `data/db.json` 为唯一持久化层，**停止进程后再备份或替换该文件**（数据库为内存单例，运行中替换会被旧状态覆写）
+- 数据库写入采用临时文件替换；若现有文件无法解析，服务会停止启动并保留原文件，避免自动重置覆盖报名数据
 - 管理端 Token 签名密钥持久化在数据库中，PM2 内存重启后登录态仍然有效
 
 ## 安全说明
@@ -151,15 +172,19 @@ pm2 reload ecosystem.config.cjs --update-env
 - `data/db.json` 含真实学生记录、密码哈希与 AI Key 副本，**已加入 `.gitignore`，严禁提交或上传**
 - 管理端密码为 scrypt 哈希存储，历史明文条目在首次成功登录时自动升级
 - 学生的候选人档案、面试、入群确认和二维码接口均校验随机访问凭据；找回使用学号、姓名和报名手机号并受限流保护。此流程没有短信验证码，属于多项报名信息校验，不等同于短信或学校统一身份认证
+- 报名表会说明个人信息和 AI 面试问答的用途及外部模型处理情况；服务端保存确认版本与时间。文案变更时应更新 `REGISTRATION_CONSENT_VERSION`
 - 当前限流状态保存在单个服务进程内存中。若部署多个应用实例，应改用共享限流存储；通过反向代理部署时，按实际可信代理层数配置 `TRUST_PROXY_HOPS`
 - 正式存放真实候选人资料前，应使用 HTTPS，并考虑接入短信验证码或学校统一身份认证
 - CSV 导出通过 `Authorization` 请求头携带 Token，Token 不出现在 URL 中
 
 ## 验证
 
-当前仓库未附带自动化测试脚本。提交前可至少运行类型检查和构建：
+本地可运行类型检查和生产构建：
 
 ```bash
 npm run lint
+npm run audit
 npm run build
 ```
+
+当前项目尚未建立自动化单元测试。招新核心流程、数据迁移与权限边界仍需要补齐独立测试后，再考虑面向真实报名数据的生产部署。

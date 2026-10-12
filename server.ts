@@ -6,7 +6,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/db/index.js';
 import { RecruitmentService } from './server/services/recruitment.js';
-import { CandidateProfile, CandidateStatus, UserRole } from './src/types.js';
+import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION, UserRole } from './src/types.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -317,7 +317,10 @@ app.post('/api/admin/clear-data', (req: Request, res: Response) => {
 // Candidate Registration & Lookup
 app.post('/api/candidates', registrationRateLimit, (req: Request, res: Response) => {
   try {
-    const { profile: rawProfile, batchId } = req.body || {};
+    const { profile: rawProfile, batchId, privacyConsentVersion } = req.body || {};
+    if (privacyConsentVersion !== REGISTRATION_CONSENT_VERSION) {
+      return res.status(400).json({ error: '请阅读并确认报名信息使用说明后再提交' });
+    }
     if (!rawProfile || typeof rawProfile !== 'object' || Array.isArray(rawProfile)) {
       return res.status(400).json({ error: '请完整填写姓名、学号、手机号等必填字段' });
     }
@@ -353,7 +356,11 @@ app.post('/api/candidates', registrationRateLimit, (req: Request, res: Response)
       return res.status(400).json({ error: '当前招新批次不可报名' });
     }
 
-    const { candidate, isNew } = RecruitmentService.registerCandidate(profile as unknown as CandidateProfile, targetBatchId);
+    const { candidate, isNew } = RecruitmentService.registerCandidate(
+      profile as unknown as CandidateProfile,
+      targetBatchId,
+      { version: REGISTRATION_CONSENT_VERSION, acceptedAt: new Date().toISOString() },
+    );
     if (!isNew) {
       return res.status(409).json({ error: '该学号已有报名档案，请通过“进度找回”验证身份' });
     }
@@ -486,8 +493,17 @@ app.get('/api/candidates/:id', (req: Request, res: Response) => {
 
 // Candidate status update (Admin/Reviewer)
 app.patch('/api/candidates/:id/status', (req: Request, res: Response) => {
-  const { status, operator, reason } = req.body;
-  if (!status) return res.status(400).json({ error: '缺少目标状态' });
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  const { status, operator, reason } = body;
+  if (typeof status !== 'string' || !CANDIDATE_STATUSES.includes(status as CandidateStatus)) {
+    return res.status(400).json({ error: '目标状态无效' });
+  }
+  if (operator !== undefined && (typeof operator !== 'string' || operator.length > 100)) {
+    return res.status(400).json({ error: '操作人格式无效' });
+  }
+  if (reason !== undefined && (typeof reason !== 'string' || reason.length > 2000)) {
+    return res.status(400).json({ error: '状态变更说明过长或格式无效' });
+  }
 
   const updated = db.updateCandidateStatus(req.params.id, status as CandidateStatus, operator || 'admin', reason);
   if (!updated) return res.status(404).json({ error: '候选人不存在' });
@@ -849,29 +865,36 @@ app.get('/api/export/candidates.csv', (req: Request, res: Response) => {
     const isAdmitted = ['ADMITTED', 'MANUAL_PASSED', 'GROUP_JOIN_CONFIRMED'].includes(c.status);
     const admissionLabel = isAdmitted ? '已录取' : c.status === 'MANUAL_REJECTED' ? '未录用' : '待定/面试中';
     return [
-      `"${c.profile.name}"`,
-      `"${c.profile.studentId}"`,
-      `"${c.profile.major}"`,
-      `"${c.profile.className}"`,
-      `"${c.profile.phone}"`,
-      `"${c.profile.wechat}"`,
-      `"${c.profile.technicalFoundation}"`,
-      `"${c.profile.techDirection}"`,
+      c.profile.name,
+      c.profile.studentId,
+      c.profile.major,
+      c.profile.className,
+      c.profile.phone,
+      c.profile.wechat,
+      c.profile.technicalFoundation,
+      c.profile.techDirection,
       c.aiScore ?? '',
-      `"${c.aiRecommendation || ''}"`,
-      `"${c.candidateType || ''}"`,
-      `"${c.status}"`,
-      `"${admissionLabel}"`,
-      `"${c.registeredAt}"`,
-    ].join(',');
+      c.aiRecommendation || '',
+      c.candidateType || '',
+      c.status,
+      admissionLabel,
+      c.registeredAt,
+    ].map(csvCell).join(',');
   });
 
-  const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const csvContent = '\uFEFF' + [headers.map(csvCell).join(','), ...rows].join('\n');
 
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="candidates-recruitment.csv"');
   res.send(csvContent);
 });
+
+function csvCell(value: unknown): string {
+  const text = String(value ?? '');
+  const spreadsheetFormula = /^[\u0000-\u0020\uFEFF]*[=+\-@]/.test(text);
+  const safeText = spreadsheetFormula ? `'${text}` : text;
+  return `"${safeText.replace(/"/g, '""')}"`;
+}
 
 // --- Vite Middleware Integration ---
 async function startServer() {
@@ -888,6 +911,12 @@ async function startServer() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) return next(err);
+    console.error('[HTTP] Unhandled request error:', err);
+    return res.status(500).json({ error: '服务器暂时无法完成请求，请稍后重试' });
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] Tech Department Recruitment System listening on http://0.0.0.0:${PORT}`);

@@ -36,8 +36,8 @@ interface DatabaseSchema {
 const DB_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'db.json');
 
-// Initial admin password for a fresh DB. Set ADMIN_DEFAULT_PASSWORD in the environment to
-// override the shipped default; anything typed later via changePassword() is persisted.
+// A fresh DB has no built-in password. Set ADMIN_DEFAULT_PASSWORD before first startup;
+// passwords changed later through the admin UI are stored as scrypt hashes.
 const DEFAULT_ADMIN_PASSWORD = (process.env.ADMIN_DEFAULT_PASSWORD || '').trim();
 
 // Passwords are stored as "scrypt:<base64url salt>:<hex digest>". The DB predates hashing
@@ -185,13 +185,57 @@ class Database {
 
   private init() {
     if (!fs.existsSync(DB_DIR)) {
-      fs.mkdirSync(DB_DIR, { recursive: true });
+      fs.mkdirSync(DB_DIR, { recursive: true, mode: 0o700 });
     }
 
     if (fs.existsSync(DB_FILE)) {
       try {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        this.data = JSON.parse(raw);
+        const parsed: unknown = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          throw new Error('Database root must be a JSON object.');
+        }
+
+        const loaded = parsed as Record<string, unknown>;
+        const requiredArrays = ['admin_users', 'recruitment_batches', 'candidates'];
+        for (const key of requiredArrays) {
+          if (!Array.isArray(loaded[key])) {
+            throw new Error(`Database field "${key}" must be an array.`);
+          }
+        }
+
+        const optionalArrays = [
+          'interviews',
+          'ai_evaluations',
+          'manual_reviews',
+          'candidate_notes',
+          'wechat_group_qrs',
+          'candidate_status_history',
+          'ai_prompts',
+        ];
+        for (const key of optionalArrays) {
+          if (loaded[key] !== undefined && !Array.isArray(loaded[key])) {
+            throw new Error(`Database field "${key}" must be an array.`);
+          }
+        }
+        if (loaded.ai_settings !== undefined && (!loaded.ai_settings || typeof loaded.ai_settings !== 'object' || Array.isArray(loaded.ai_settings))) {
+          throw new Error('Database field "ai_settings" must be an object.');
+        }
+        if (loaded.admin_passwords !== undefined && (!loaded.admin_passwords || typeof loaded.admin_passwords !== 'object' || Array.isArray(loaded.admin_passwords))) {
+          throw new Error('Database field "admin_passwords" must be an object.');
+        }
+        if (loaded.auth_secret !== undefined && typeof loaded.auth_secret !== 'string') {
+          throw new Error('Database field "auth_secret" must be a string.');
+        }
+        if (loaded.student_access_tokens !== undefined && (!loaded.student_access_tokens || typeof loaded.student_access_tokens !== 'object' || Array.isArray(loaded.student_access_tokens))) {
+          throw new Error('Database field "student_access_tokens" must be an object.');
+        }
+
+        this.data = {
+          ...this.data,
+          ...(loaded as Partial<DatabaseSchema>),
+          student_access_tokens: (loaded.student_access_tokens as Record<string, string> | undefined) || {},
+        };
         this.data.student_access_tokens ||= {};
         // Ensure reviewer role is purged and only ADMIN exists
         if (this.data.admin_users) {
@@ -201,9 +245,16 @@ class Database {
           delete this.data.admin_passwords['reviewer'];
         }
         console.log(`[DB] Successfully loaded database with ${this.data.candidates.length} candidates.`);
+        if (process.platform !== 'win32') {
+          try {
+            fs.chmodSync(DB_FILE, 0o600);
+          } catch (permissionError) {
+            console.warn('[DB] Could not restrict database file permissions:', permissionError);
+          }
+        }
       } catch (e) {
-        console.error('[DB] Error parsing existing db.json, generating seed...', e);
-        this.seedInitialData();
+        console.error('[DB] Refusing to replace an unreadable database file:', e);
+        throw new Error('The existing database could not be loaded. No data was overwritten; repair or restore the file before restarting.', { cause: e });
       }
     } else {
       this.seedInitialData();
@@ -216,10 +267,22 @@ class Database {
   }
 
   private save() {
+    const temporaryFile = `${DB_FILE}.${process.pid}.${randomBytes(8).toString('hex')}.tmp`;
+    let fileDescriptor: number | undefined;
     try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2), 'utf-8');
+      fileDescriptor = fs.openSync(temporaryFile, 'wx', 0o600);
+      fs.writeFileSync(fileDescriptor, JSON.stringify(this.data, null, 2), 'utf-8');
+      fs.fsyncSync(fileDescriptor);
+      fs.closeSync(fileDescriptor);
+      fileDescriptor = undefined;
+      fs.renameSync(temporaryFile, DB_FILE);
     } catch (err) {
       console.error('[DB] Failed to save to disk:', err);
+      if (fileDescriptor !== undefined) {
+        try { fs.closeSync(fileDescriptor); } catch {}
+      }
+      try { fs.unlinkSync(temporaryFile); } catch {}
+      throw new Error('Failed to persist the database. Check server logs and disk permissions.', { cause: err });
     }
   }
 
@@ -396,6 +459,7 @@ class Database {
   public updateCandidateStatus(candidateId: string, toStatus: CandidateStatus, operator = 'system', reason?: string): Candidate | null {
     const cand = this.data.candidates.find(c => c.id === candidateId);
     if (!cand) return null;
+    if (cand.status === toStatus) return cand;
 
     const fromStatus = cand.status;
     cand.status = toStatus;
