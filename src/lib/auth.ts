@@ -14,6 +14,14 @@ export function getAdminToken(): string {
   }
 }
 
+export function saveAdminToken(token: string): void {
+  try {
+    sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+  } catch {
+    // The current in-memory session still works if storage is unavailable.
+  }
+}
+
 export function clearAdminSession(): void {
   try {
     sessionStorage.removeItem(ADMIN_TOKEN_KEY);

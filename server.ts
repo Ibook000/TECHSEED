@@ -63,7 +63,8 @@ function createAdminToken(username: string): string {
   const secret = db.getAuthSecret();
   if (!secret) return '';
   const exp = Date.now() + ADMIN_TOKEN_TTL_MS;
-  const payload = `${username}.${exp}`;
+  const sessionVersion = db.getAdminSessionVersion(username);
+  const payload = `${username}.${exp}.${sessionVersion}`;
   const sig = createHmac('sha256', secret).update(payload).digest('base64url');
   return `${ADMIN_TOKEN_PREFIX}${payload}.${sig}`;
 }
@@ -73,13 +74,22 @@ function verifyAdminToken(token: string): boolean {
   if (!secret || !token.startsWith(ADMIN_TOKEN_PREFIX)) return false;
 
   const parts = token.slice(ADMIN_TOKEN_PREFIX.length).split('.');
-  const [usernamePart, expPart, sig] = [parts[0], parts[1], parts.slice(2).join('.')];
+  if (parts.length !== 3 && parts.length !== 4) return false;
+  const [usernamePart, expPart] = parts;
+  const hasSessionVersion = parts.length === 4;
+  const tokenSessionVersion = hasSessionVersion ? parts[2] : '0';
+  const sig = hasSessionVersion ? parts[3] : parts[2];
   if (!usernamePart || !expPart || !sig) return false;
+  if (tokenSessionVersion !== db.getAdminSessionVersion(usernamePart)) return false;
 
   const exp = Number(expPart);
   if (!Number.isFinite(exp) || Date.now() > exp) return false;
 
-  const payload = `${usernamePart}.${expPart}`;
+  // Three-part tokens were issued before session versions existed. Keep them valid
+  // while the version remains at 0; a password change moves it and revokes them.
+  const payload = hasSessionVersion
+    ? `${usernamePart}.${expPart}.${tokenSessionVersion}`
+    : `${usernamePart}.${expPart}`;
   const expected = createHmac('sha256', secret).update(payload).digest('base64url');
   const actual = Buffer.from(sig);
   const want = Buffer.from(expected);
@@ -289,7 +299,12 @@ app.post('/api/auth/change-password', (req: Request, res: Response) => {
   if (!db.changePassword(cleanUser, cleanNew)) {
     return res.status(400).json({ success: false, error: '管理员密码未符合安全要求，修改失败' });
   }
-  return res.json({ success: true, message: '后台管理密码已成功修改' });
+  return res.json({
+    success: true,
+    message: '后台管理密码已成功修改，其他登录会话已失效',
+    token: createAdminToken(cleanUser),
+    expiresInMs: ADMIN_TOKEN_TTL_MS,
+  });
 });
 
 app.get('/api/auth/users', (req: Request, res: Response) => {

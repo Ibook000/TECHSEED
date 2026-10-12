@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Lock, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
 import { AdminUser } from '../../types.js';
+import { saveAdminToken } from '../../lib/auth.js';
 import {
   getAdminPasswordPolicyError,
   MAX_ADMIN_PASSWORD_LENGTH,
@@ -58,7 +59,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSuccess('后台独立密码已成功修改！请妥善保管新密码。');
+        if (data.token) saveAdminToken(data.token);
+        setSuccess('后台独立密码已成功修改，其他登录会话已失效。请妥善保管新密码。');
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');

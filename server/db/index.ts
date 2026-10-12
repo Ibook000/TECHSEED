@@ -20,6 +20,7 @@ import { getAdminPasswordPolicyError, isAdminPasswordValid } from '../../src/lib
 interface DatabaseSchema {
   admin_users: AdminUser[];
   admin_passwords?: Record<string, string>;
+  admin_session_versions?: Record<string, string>;
   auth_secret?: string;
   student_access_tokens?: Record<string, string>;
   recruitment_batches: RecruitmentBatch[];
@@ -163,6 +164,7 @@ class Database {
   constructor() {
     this.data = {
       admin_users: [],
+      admin_session_versions: {},
       student_access_tokens: {},
       recruitment_batches: [],
       candidates: [],
@@ -224,6 +226,14 @@ class Database {
         }
         if (loaded.admin_passwords !== undefined && (!loaded.admin_passwords || typeof loaded.admin_passwords !== 'object' || Array.isArray(loaded.admin_passwords))) {
           throw new Error('Database field "admin_passwords" must be an object.');
+        }
+        if (loaded.admin_session_versions !== undefined && (
+          !loaded.admin_session_versions ||
+          typeof loaded.admin_session_versions !== 'object' ||
+          Array.isArray(loaded.admin_session_versions) ||
+          Object.values(loaded.admin_session_versions as Record<string, unknown>).some(value => typeof value !== 'string')
+        )) {
+          throw new Error('Database field "admin_session_versions" must be an object of strings.');
         }
         if (loaded.auth_secret !== undefined && typeof loaded.auth_secret !== 'string') {
           throw new Error('Database field "auth_secret" must be a string.');
@@ -382,6 +392,7 @@ class Database {
 
     this.data = {
       admin_users: adminUsers,
+      admin_session_versions: {},
       recruitment_batches: [batch2026, batch2025],
       candidates: [],
       interviews: [],
@@ -721,6 +732,10 @@ class Database {
     return this.data.admin_users.find(u => u.username === username);
   }
 
+  public getAdminSessionVersion(username: string): string {
+    return this.data.admin_session_versions?.[username] || '0';
+  }
+
   public verifyPassword(username: string, pass: string): boolean {
     if (!this.data.admin_passwords?.admin) {
       if (!DEFAULT_ADMIN_PASSWORD) return false;
@@ -764,6 +779,8 @@ class Database {
       };
     }
     this.data.admin_passwords[username] = hashPassword(newPass);
+    this.data.admin_session_versions ||= {};
+    this.data.admin_session_versions[username] = randomBytes(16).toString('hex');
     this.save();
     return true;
   }
