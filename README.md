@@ -4,6 +4,16 @@ xxxxx学院学生会技术部 AI 招新系统（Tech Dept AI Recruitment System�
 
 单页应用实现完整招新流水线：学生注册 → AI 面试 → 智能评估 → 管理端审核 → 微信群准入。
 
+## 页面预览
+
+### 招新首页
+
+![TECHSEED 招新首页](public/screenshots/home.png)
+
+### 报名与 AI 初筛
+
+![TECHSEED 报名与 AI 初筛表单](public/screenshots/application-form.png)
+
 ## 功能特性
 
 - **学生端**：报名后安全保存访问凭据、AI 多轮面试（断点续答）、找回个人进度、入群二维码展示与入群确认
