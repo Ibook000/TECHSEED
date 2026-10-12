@@ -53,7 +53,20 @@ class ConcurrencyLimiter {
   }
 }
 
-const MAX_CONCURRENT_LLM = Math.max(1, parseInt(process.env.LLM_MAX_CONCURRENT || '10', 10));
+const DEFAULT_MAX_CONCURRENT_LLM = 10;
+const configuredMaxConcurrent = process.env.LLM_MAX_CONCURRENT?.trim();
+const parsedMaxConcurrent = configuredMaxConcurrent && /^\d+$/.test(configuredMaxConcurrent)
+  ? Number(configuredMaxConcurrent)
+  : Number.NaN;
+const hasValidMaxConcurrent = Number.isSafeInteger(parsedMaxConcurrent) && parsedMaxConcurrent > 0;
+const MAX_CONCURRENT_LLM = hasValidMaxConcurrent
+  ? parsedMaxConcurrent
+  : DEFAULT_MAX_CONCURRENT_LLM;
+
+if (configuredMaxConcurrent && !hasValidMaxConcurrent) {
+  console.warn(`[AI Service] Invalid LLM_MAX_CONCURRENT; using default ${DEFAULT_MAX_CONCURRENT_LLM}`);
+}
+
 const llmLimiter = new ConcurrencyLimiter(MAX_CONCURRENT_LLM);
 
 console.log(`[AI Service] Concurrency limiter initialized: max ${MAX_CONCURRENT_LLM} concurrent LLM calls`);
@@ -807,4 +820,3 @@ ${candidateConversation}
     };
   }
 }
-

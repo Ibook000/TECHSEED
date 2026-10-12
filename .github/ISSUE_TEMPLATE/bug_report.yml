@@ -1,0 +1,44 @@
+name: Bug report
+description: Report a problem so maintainers can reproduce and fix it.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not include real student information, passwords, API keys, access tokens, or database files. Replace sensitive values with examples.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen.
+      placeholder: A clear description of the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: List the steps, using dummy data where needed.
+      placeholder: |
+        1. Open ...
+        2. Choose ...
+        3. See the error
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the deployment type, browser, and Node.js version if relevant.
+      placeholder: e.g. local development, Node.js 22, Chrome
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Remove personal data and secrets before attaching logs or screenshots.
+      render: text
+    validations:
+      required: false

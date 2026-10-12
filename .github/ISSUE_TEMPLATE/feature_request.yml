@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest an improvement for TECHSEED.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should this solve?
+      description: Describe the situation or need behind the request.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: Explain the change you have in mind. Screenshots or sketches are welcome for UI requests.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Share other approaches you have considered, if any.
+    validations:
+      required: false
