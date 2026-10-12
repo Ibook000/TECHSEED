@@ -267,7 +267,7 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
                   {/* QR Title & Advice */}
                   <div className="text-center max-w-sm">
                     <p className="text-xs font-bold text-amber-800 font-mono tracking-wide">
-                      {qrData.qr.title || 'xxxxx学院技术部 · 2026 招新官方微信群'}
+                      {qrData.qr.title || 'xxxxx学院技术部招新官方微信群'}
                     </p>
                     <p className="text-[11px] text-zinc-500 font-mono mt-1 leading-relaxed">
                       进群后请将群昵称修改为：<span className="text-zinc-800 font-medium">专业班级-姓名</span>（如：物联网2601-张三）

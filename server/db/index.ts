@@ -99,7 +99,7 @@ const DEFAULT_PROMPTS: AIPromptConfig[] = [
   },
 ];
 
-// SVG QR Code data URI for default WeChat Group
+// Signature for removing the non-scannable placeholder used by older database seeds.
 const DEFAULT_WECHAT_QR_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
   <rect width="300" height="300" fill="#ffffff" rx="16"/>
@@ -187,6 +187,8 @@ class Database {
   }
 
   private init() {
+    let removedPlaceholderQrCount = 0;
+
     if (!fs.existsSync(DB_DIR)) {
       fs.mkdirSync(DB_DIR, { recursive: true, mode: 0o700 });
     }
@@ -248,6 +250,9 @@ class Database {
           student_access_tokens: (loaded.student_access_tokens as Record<string, string> | undefined) || {},
         };
         this.data.student_access_tokens ||= {};
+        const qrCountBeforeMigration = this.data.wechat_group_qrs.length;
+        this.data.wechat_group_qrs = this.data.wechat_group_qrs.filter(qr => qr.imageUrl !== DEFAULT_WECHAT_QR_SVG);
+        removedPlaceholderQrCount = qrCountBeforeMigration - this.data.wechat_group_qrs.length;
         // Ensure reviewer role is purged and only ADMIN exists
         if (this.data.admin_users) {
           this.data.admin_users = this.data.admin_users.filter(u => u.username === 'admin');
@@ -269,6 +274,11 @@ class Database {
       }
     } else {
       this.seedInitialData();
+    }
+
+    if (removedPlaceholderQrCount > 0) {
+      this.save();
+      console.info(`[DB] Removed ${removedPlaceholderQrCount} bundled placeholder QR code(s); configure a real group QR before admissions.`);
     }
 
     this.ensureAuthSecret();
@@ -360,19 +370,6 @@ class Database {
       },
     ];
 
-    const wechatQRs: WeChatGroupQR[] = [
-      {
-        id: 'qr-2026-1',
-        batchId: 'batch-2026',
-        imageUrl: DEFAULT_WECHAT_QR_SVG,
-        title: '2026 技术部招新官方微信群 (一期)',
-        status: 'ACTIVE',
-        expiresAt: '2026-10-31T23:59:59.000Z',
-        createdAt: '2026-09-01T08:00:00.000Z',
-        updatedAt: '2026-09-01T08:00:00.000Z',
-      },
-    ];
-
     // Clean initial state for user self-testing
     const defaultAISettings: AISettings = {
       id: 'ai-settings-main',
@@ -399,7 +396,7 @@ class Database {
       ai_evaluations: [],
       manual_reviews: [],
       candidate_notes: [],
-      wechat_group_qrs: wechatQRs,
+      wechat_group_qrs: [],
       candidate_status_history: [],
       ai_prompts: DEFAULT_PROMPTS,
       ai_settings: defaultAISettings,

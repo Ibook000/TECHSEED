@@ -20,7 +20,7 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
 }) => {
   const [selectedBatchId, setSelectedBatchId] = useState(activeBatchId || 'default');
   const [currentQR, setCurrentQR] = useState<WeChatGroupQR | null>(null);
-  const [title, setTitle] = useState('学生会技术部 2026 招新官方微信群');
+  const [title, setTitle] = useState('技术部招新官方微信群');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -36,7 +36,7 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
           setTitle(data.title);
           setImageUrl(data.imageUrl);
         } else {
-          // Default preset QR if none
+          setTitle('技术部招新官方微信群');
           setImageUrl('');
         }
       }
