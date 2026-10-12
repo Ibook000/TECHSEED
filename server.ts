@@ -1,20 +1,26 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
-import dotenv from 'dotenv';
-import { createHmac, timingSafeEqual } from 'crypto';
+import 'dotenv/config';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/db/index.js';
 import { RecruitmentService } from './server/services/recruitment.js';
-import { CandidateStatus, UserRole } from './src/types.js';
-
-dotenv.config();
+import { CandidateProfile, CandidateStatus, UserRole } from './src/types.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+const trustedProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+if (Number.isInteger(trustedProxyHops) && trustedProxyHops > 0 && trustedProxyHops <= 10) {
+  app.set('trust proxy', trustedProxyHops);
+}
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '16kb', parameterLimit: 100 }));
+app.use('/api', (_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 
 // --- Admin session tokens ---
 // Tokens are HMAC-SHA256 signed over "<username>.<expiryEpochMs>" using a secret that
@@ -62,6 +68,74 @@ function isAdminAuthed(req: Request): boolean {
   return verifyAdminToken(extractToken(req));
 }
 
+function extractStudentToken(req: Request): string {
+  return typeof req.headers['x-student-token'] === 'string' ? req.headers['x-student-token'].trim() : '';
+}
+
+function hasStudentAccess(req: Request, candidateId: string): boolean {
+  if (isAdminAuthed(req)) return true;
+  const token = extractStudentToken(req);
+  const savedHash = db.getStudentAccessTokenHash(candidateId);
+  if (!token || !savedHash) return false;
+  const actual = Buffer.from(createHash('sha256').update(token).digest('hex'));
+  const expected = Buffer.from(savedHash);
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
+function requireStudentOrAdmin(req: Request, res: Response, candidateId: string): boolean {
+  if (hasStudentAccess(req, candidateId)) return true;
+  res.status(401).json({ error: '身份凭据无效，请重新验证本人信息' });
+  return false;
+}
+
+interface RateLimitBucket {
+  count: number;
+  resetAt: number;
+}
+
+const rateLimitBuckets = new Map<string, RateLimitBucket>();
+let rateLimitCalls = 0;
+
+function rateLimit(name: string, maxRequests: number, windowMs: number, keySuffix?: (req: Request) => string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const now = Date.now();
+    if (++rateLimitCalls % 256 === 0 || rateLimitBuckets.size > 10000) {
+      for (const [key, bucket] of rateLimitBuckets) {
+        if (bucket.resetAt <= now) rateLimitBuckets.delete(key);
+      }
+      while (rateLimitBuckets.size > 10000) {
+        const oldestKey = rateLimitBuckets.keys().next().value;
+        if (oldestKey === undefined) break;
+        rateLimitBuckets.delete(oldestKey);
+      }
+    }
+
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const key = `${name}:${ip}:${keySuffix ? keySuffix(req) : ''}`;
+    let bucket = rateLimitBuckets.get(key);
+    if (!bucket || bucket.resetAt <= now) {
+      bucket = { count: 0, resetAt: now + windowMs };
+      rateLimitBuckets.set(key, bucket);
+    }
+    bucket.count += 1;
+
+    if (bucket.count > maxRequests) {
+      res.setHeader('Retry-After', String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))));
+      return res.status(429).json({ error: '请求过于频繁，请稍后再试' });
+    }
+    next();
+  };
+}
+
+const loginRateLimit = rateLimit('admin-login', 10, 15 * 60 * 1000);
+const registrationRateLimit = rateLimit('candidate-registration', 60, 60 * 60 * 1000);
+const recoveryRateLimit = rateLimit('student-recovery-ip', 30, 15 * 60 * 1000);
+const recoveryCandidateRateLimit = rateLimit('student-recovery-id', 5, 15 * 60 * 1000, req => String(req.body?.studentId || '').trim().slice(0, 100));
+const interviewStartRateLimit = rateLimit('interview-start-ip', 120, 60 * 60 * 1000);
+const interviewStartCandidateRateLimit = rateLimit('interview-start-candidate', 3, 15 * 60 * 1000, req => String(req.body?.candidateId || '').slice(0, 120));
+const interviewAnswerRateLimit = rateLimit('interview-answer', 10, 60 * 1000, req => (req.params.id || 'unknown').slice(0, 120));
+const interviewCompleteRateLimit = rateLimit('interview-complete', 4, 15 * 60 * 1000, req => (req.params.id || 'unknown').slice(0, 120));
+
 // Interview messages carry a per-round AI "internal observation" that only the admin
 // transcript viewer reads. Strip it for student-facing reads.
 function redactInterview(interview: ReturnType<typeof db.getInterviewByCandidateId>) {
@@ -72,8 +146,8 @@ function redactInterview(interview: ReturnType<typeof db.getInterviewByCandidate
   };
 }
 
-// Unauthenticated reads return the candidate's own record for self-lookup, but direct
-// contact details are admin-only (IDOR: the id is guessable from other endpoints).
+// Student-facing candidate responses omit direct contact details; administrators can
+// still access the full profile through their authenticated routes.
 function redactCandidate(candidate: NonNullable<ReturnType<typeof db.getCandidateById>>) {
   return {
     ...candidate,
@@ -85,16 +159,15 @@ function redactCandidate(candidate: NonNullable<ReturnType<typeof db.getCandidat
   };
 }
 
-// Routes reachable without an admin session. Fail-closed: anything not listed here
-// requires a valid admin token, including routes added later. Student-side routes stay
-// public because students carry no credential — they identify themselves by 学号 only.
+// Routes that students can reach without an admin session. Candidate-specific handlers
+// still validate a per-student token before returning or changing any private data.
 const PUBLIC_ROUTES = new Set<string>([
   'GET /api/health',
   'POST /api/auth/login',
   'GET /api/logo-status',
   'POST /api/candidates',
+  'POST /api/student/recover',
   'GET /api/candidates/:id',
-  'GET /api/candidates/by-student-id/:studentId',
   'POST /api/candidates/:id/join-confirm',
   'POST /api/interviews',
   'GET /api/interviews/:id',
@@ -119,7 +192,7 @@ function isPublicRoute(method: string, urlPath: string): boolean {
   });
 }
 
-app.use((req: Request, res: Response, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   if (!req.path.startsWith('/api/')) return next();
   if (isPublicRoute(req.method, req.path)) return next();
   if (verifyAdminToken(extractToken(req))) return next();
@@ -135,7 +208,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 // Auth - Strict Independent Admin Authentication
-app.post('/api/auth/login', (req: Request, res: Response) => {
+app.post('/api/auth/login', loginRateLimit, (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -242,20 +315,78 @@ app.post('/api/admin/clear-data', (req: Request, res: Response) => {
 });
 
 // Candidate Registration & Lookup
-app.post('/api/candidates', (req: Request, res: Response) => {
+app.post('/api/candidates', registrationRateLimit, (req: Request, res: Response) => {
   try {
-    const { profile, batchId } = req.body;
-    if (!profile || !profile.name || !profile.studentId || !profile.phone) {
+    const { profile: rawProfile, batchId } = req.body || {};
+    if (!rawProfile || typeof rawProfile !== 'object' || Array.isArray(rawProfile)) {
       return res.status(400).json({ error: '请完整填写姓名、学号、手机号等必填字段' });
     }
 
-    const { candidate, isNew } = RecruitmentService.registerCandidate(profile, batchId);
-    // Public route, and dedupe echoes an existing record back to whoever submitted the
-    // studentId — so contact details must never leave here unredacted.
-    return res.json({ candidate: redactCandidate(candidate), isNew });
+    const limits: Record<string, number> = {
+      name: 80,
+      studentId: 64,
+      major: 120,
+      className: 80,
+      phone: 40,
+      wechat: 80,
+      technicalFoundation: 80,
+      techDirection: 80,
+      selfIntro: 4000,
+    };
+    const profile: Record<string, string> = {};
+    for (const [field, maxLength] of Object.entries(limits)) {
+      const value = rawProfile[field] ?? '';
+      if (typeof value !== 'string' || value.length > maxLength) {
+        return res.status(400).json({ error: '报名信息格式不正确或内容过长' });
+      }
+      profile[field] = value.trim();
+    }
+    if (!profile.name || !profile.studentId || !profile.phone) {
+      return res.status(400).json({ error: '请完整填写姓名、学号、手机号等必填字段' });
+    }
+    if (batchId !== undefined && (typeof batchId !== 'string' || batchId.length > 100)) {
+      return res.status(400).json({ error: '招新批次无效' });
+    }
+    const targetBatchId = batchId || db.getActiveBatch()?.id;
+    const targetBatch = db.getBatches().find(batch => batch.id === targetBatchId);
+    if (!targetBatch || (!targetBatch.isActive && !isAdminAuthed(req))) {
+      return res.status(400).json({ error: '当前招新批次不可报名' });
+    }
+
+    const { candidate, isNew } = RecruitmentService.registerCandidate(profile as unknown as CandidateProfile, targetBatchId);
+    if (!isNew) {
+      return res.status(409).json({ error: '该学号已有报名档案，请通过“进度找回”验证身份' });
+    }
+
+    const studentToken = randomBytes(32).toString('base64url');
+    db.setStudentAccessTokenHash(candidate.id, createHash('sha256').update(studentToken).digest('hex'));
+    return res.status(201).json({ candidate: redactCandidate(candidate), studentToken, isNew: true });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || '注册失败' });
   }
+});
+
+// Recover a lost student session using registration details, then rotate its token.
+// The response is deliberately identical for a missing candidate and mismatched details.
+app.post('/api/student/recover', recoveryRateLimit, recoveryCandidateRateLimit, (req: Request, res: Response) => {
+  const { studentId, name, phone } = req.body || {};
+  if ([studentId, name, phone].some(value => typeof value !== 'string' || value.length > 100)) {
+    return res.status(400).json({ error: '请填写报名时的学号、姓名和手机号' });
+  }
+
+  const candidate = db.findCandidateByStudentId(String(studentId).trim());
+  const normalizeName = (value: string) => value.trim().normalize('NFKC').toLowerCase();
+  const normalizePhone = (value: string) => value.trim().replace(/[\s()\-]/g, '');
+  if (!candidate ||
+      normalizeName(candidate.profile.name) !== normalizeName(name) ||
+      normalizePhone(candidate.profile.phone) !== normalizePhone(phone)) {
+    return res.status(401).json({ error: '信息不匹配，请检查报名时填写的内容' });
+  }
+
+  const studentToken = randomBytes(32).toString('base64url');
+  db.setStudentAccessTokenHash(candidate.id, createHash('sha256').update(studentToken).digest('hex'));
+  const interview = db.getInterviewByCandidateId(candidate.id);
+  return res.json({ candidate: redactCandidate(candidate), interview: redactInterview(interview), studentToken });
 });
 
 // Candidate List with search, sort, filters
@@ -323,11 +454,10 @@ app.get('/api/candidates', (req: Request, res: Response) => {
   res.json(candidates);
 });
 
-// Single candidate detail. Public so students can read their own record after an
-// interview (App.tsx refreshCandidateSession), but students must not receive admin
-// internals — notes, manualReview.internalComments and the status ledger are returned
-// only to authenticated admins.
+// Candidate detail is available to an authenticated student for their own record or
+// to an administrator for review. Only administrators receive internal review data.
 app.get('/api/candidates/:id', (req: Request, res: Response) => {
+  if (!requireStudentOrAdmin(req, res, req.params.id)) return;
   const candidate = db.getCandidateById(req.params.id);
   if (!candidate) {
     return res.status(404).json({ error: '候选人不存在' });
@@ -352,22 +482,6 @@ app.get('/api/candidates/:id', (req: Request, res: Response) => {
     notes,
     interview,
   });
-});
-
-// Lookup by Student ID (For student re-login / session recovery)
-app.get('/api/candidates/by-student-id/:studentId', (req: Request, res: Response) => {
-  const { batchId } = req.query;
-  const sId = (req.params.studentId || '').trim();
-  const candidate = (batchId ? db.findCandidateByStudentId(sId, batchId as string) : null) ||
-    db.getCandidates().find(c => c.profile.studentId === sId);
-
-  if (!candidate) {
-    return res.status(404).json({ error: '未找到该学号的报名记录' });
-  }
-
-  const interview = db.getInterviewByCandidateId(candidate.id);
-  // Always student-facing: strip AI observations and direct contact details.
-  res.json({ candidate: redactCandidate(candidate), interview: redactInterview(interview) });
 });
 
 // Candidate status update (Admin/Reviewer)
@@ -447,6 +561,7 @@ app.post('/api/candidates/:id/notes', (req: Request, res: Response) => {
 
 // Student confirms group join
 app.post('/api/candidates/:id/join-confirm', (req: Request, res: Response) => {
+  if (!requireStudentOrAdmin(req, res, req.params.id)) return;
   try {
     const candidate = RecruitmentService.confirmGroupJoin(req.params.id);
     res.json({ success: true, candidate: redactCandidate(candidate) });
@@ -456,29 +571,39 @@ app.post('/api/candidates/:id/join-confirm', (req: Request, res: Response) => {
 });
 
 // AI Interview Sessions
-app.post('/api/interviews', async (req: Request, res: Response) => {
+app.post('/api/interviews', interviewStartRateLimit, interviewStartCandidateRateLimit, async (req: Request, res: Response) => {
   try {
     const { candidateId } = req.body;
-    if (!candidateId) return res.status(400).json({ error: '缺少 candidateId' });
+    if (typeof candidateId !== 'string' || !candidateId || candidateId.length > 120) {
+      return res.status(400).json({ error: '缺少有效的候选人编号' });
+    }
+    if (!requireStudentOrAdmin(req, res, candidateId)) return;
 
     const result = await RecruitmentService.startOrResumeInterview(candidateId);
-    res.json({ ...result, interview: redactInterview(result.interview) });
+    res.json({
+      ...result,
+      candidate: isAdminAuthed(req) ? result.candidate : redactCandidate(result.candidate),
+      interview: redactInterview(result.interview),
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
 app.get('/api/interviews/:id', (req: Request, res: Response) => {
+  if (!requireStudentOrAdmin(req, res, req.params.id)) return;
   const interview = db.getInterviewByCandidateId(req.params.id);
   if (!interview) return res.status(404).json({ error: '面试记录未找到' });
-  // Public: students never read the per-round AI observations.
+  // Student responses never include per-round AI observations.
   res.json(redactInterview(interview));
 });
 
-app.post('/api/interviews/:id/answer', async (req: Request, res: Response) => {
+app.post('/api/interviews/:id/answer', interviewAnswerRateLimit, async (req: Request, res: Response) => {
   try {
     const { answer } = req.body;
-    if (!answer || !answer.trim()) return res.status(400).json({ error: '回答内容不能为空' });
+    if (!requireStudentOrAdmin(req, res, req.params.id)) return;
+    if (typeof answer !== 'string' || !answer.trim()) return res.status(400).json({ error: '回答内容不能为空' });
+    if (answer.length > 4000) return res.status(413).json({ error: '单次回答不能超过 4000 字' });
 
     const result = await RecruitmentService.submitAnswer(req.params.id, answer);
     res.json({ ...result, interview: redactInterview(result.interview) });
@@ -487,8 +612,9 @@ app.post('/api/interviews/:id/answer', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/interviews/:id/complete', async (req: Request, res: Response) => {
+app.post('/api/interviews/:id/complete', interviewCompleteRateLimit, async (req: Request, res: Response) => {
   try {
+    if (!requireStudentOrAdmin(req, res, req.params.id)) return;
     const result = await RecruitmentService.completeInterview(req.params.id);
     res.json({ ...result, interview: redactInterview(result.interview) });
   } catch (err: any) {
@@ -553,6 +679,7 @@ app.get('/api/wechat-qr', (req: Request, res: Response) => {
 
   // Student query
   if (candidateId && typeof candidateId === 'string') {
+    if (!requireStudentOrAdmin(req, res, candidateId)) return;
     const result = RecruitmentService.getWeChatQRForStudent(candidateId);
     return res.json(result);
   }

@@ -20,6 +20,7 @@ interface DatabaseSchema {
   admin_users: AdminUser[];
   admin_passwords?: Record<string, string>;
   auth_secret?: string;
+  student_access_tokens?: Record<string, string>;
   recruitment_batches: RecruitmentBatch[];
   candidates: Candidate[];
   interviews: InterviewSession[];
@@ -161,6 +162,7 @@ class Database {
   constructor() {
     this.data = {
       admin_users: [],
+      student_access_tokens: {},
       recruitment_batches: [],
       candidates: [],
       interviews: [],
@@ -190,6 +192,7 @@ class Database {
       try {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
         this.data = JSON.parse(raw);
+        this.data.student_access_tokens ||= {};
         // Ensure reviewer role is purged and only ADMIN exists
         if (this.data.admin_users) {
           this.data.admin_users = this.data.admin_users.filter(u => u.username === 'admin');
@@ -233,6 +236,16 @@ class Database {
 
   public getAuthSecret(): string {
     return (process.env.AUTH_TOKEN_SECRET || '').trim() || this.data.auth_secret || '';
+  }
+
+  public getStudentAccessTokenHash(candidateId: string): string | undefined {
+    return this.data.student_access_tokens?.[candidateId];
+  }
+
+  public setStudentAccessTokenHash(candidateId: string, tokenHash: string): void {
+    this.data.student_access_tokens ||= {};
+    this.data.student_access_tokens[candidateId] = tokenHash;
+    this.save();
   }
 
   private seedInitialData() {
@@ -325,6 +338,7 @@ class Database {
     this.data.manual_reviews = [];
     this.data.candidate_notes = [];
     this.data.candidate_status_history = [];
+    this.data.student_access_tokens = {};
     this.save();
     console.log('[DB] All candidate testing records cleared.');
   }
@@ -498,6 +512,7 @@ class Database {
     this.data.manual_reviews = this.data.manual_reviews.filter(m => m.candidateId !== candidateId);
     this.data.candidate_notes = this.data.candidate_notes.filter(n => n.candidateId !== candidateId);
     this.data.candidate_status_history = this.data.candidate_status_history.filter(h => h.candidateId !== candidateId);
+    delete this.data.student_access_tokens?.[candidateId];
     this.save();
     return this.data.candidates.length < prevLen;
   }

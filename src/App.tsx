@@ -23,7 +23,14 @@ import { QRCodeManager } from './components/admin/QRCodeManager.js';
 import { PromptManager } from './components/admin/PromptManager.js';
 import { AISettingsManager } from './components/admin/AISettingsManager.js';
 import { AdminLoginModal } from './components/admin/AdminLoginModal.js';
-import { getAdminToken, clearAdminSession } from './lib/auth.js';
+import {
+  getAdminToken,
+  getStudentAccessToken,
+  clearAdminSession,
+  clearStudentSession,
+  saveStudentSession,
+  STUDENT_CANDIDATE_ID_KEY,
+} from './lib/auth.js';
 import { AdminLoginPage } from './components/admin/AdminLoginPage.js';
 import {
   Candidate,
@@ -115,6 +122,8 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        const target = e.target as HTMLElement | null;
+        if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')) return;
         e.preventDefault();
         navigateToView('admin');
       }
@@ -154,6 +163,12 @@ export default function App() {
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<string>('ALL');
+
+  useEffect(() => {
+    if (currentView === 'student' && !candidateSession && studentScreen !== 'home') {
+      setIsStatusQueryOpen(true);
+    }
+  }, [currentView, studentScreen, candidateSession]);
 
   // Load Batches
   const loadBatches = async () => {
@@ -221,9 +236,10 @@ export default function App() {
 
   // Auto-restore candidate session from localStorage if available on launch
   useEffect(() => {
-    const savedStudentId = typeof window !== 'undefined' ? localStorage.getItem('tech_last_student_id') : null;
-    if (savedStudentId && !candidateSession) {
-      fetch(`/api/candidates/by-student-id/${encodeURIComponent(savedStudentId.trim())}?batchId=${activeBatchId}`)
+    const savedCandidateId = typeof window !== 'undefined' ? localStorage.getItem(STUDENT_CANDIDATE_ID_KEY) : null;
+    const savedStudentToken = getStudentAccessToken();
+    if (savedCandidateId && savedStudentToken && !candidateSession) {
+      fetch(`/api/candidates/${encodeURIComponent(savedCandidateId)}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data?.candidate) {
@@ -231,11 +247,12 @@ export default function App() {
             setActiveInterview(data.interview);
             setRecentStudentId(data.candidate.profile.studentId);
             setRecentCandidateName(data.candidate.profile.name);
+            setIsStatusQueryOpen(false);
           }
         })
         .catch(() => {});
     }
-  }, [activeBatchId]);
+  }, []);
 
   useEffect(() => {
     if (activeBatchId) {
@@ -256,7 +273,11 @@ export default function App() {
       throw new Error(err.error || '报名失败');
     }
 
-    const { candidate } = await res.json();
+    const { candidate, studentToken } = await res.json();
+    if (!candidate?.id || !studentToken) {
+      throw new Error('报名成功，但未能建立安全会话，请通过“进度找回”继续');
+    }
+    saveStudentSession(candidate.id, studentToken);
     setCandidateSession(candidate);
     setRecentStudentId(candidate.profile.studentId);
     setRecentCandidateName(candidate.profile.name);
@@ -274,11 +295,38 @@ export default function App() {
 
     if (intvRes.ok) {
       const data = await intvRes.json();
+      if (data.candidate) setCandidateSession(data.candidate);
       setActiveInterview(data.interview);
       setStudentScreen('interview');
+    } else {
+      setStudentScreen('status');
     }
 
     loadCandidatesAndStats(activeBatchId);
+  };
+
+  const startOrResumeInterview = async () => {
+    if (!candidateSession) return;
+    setIsInterviewLoading(true);
+    try {
+      const res = await fetch('/api/interviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId: candidateSession.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || '暂时无法开始面试，请稍后重试');
+        return;
+      }
+      if (data.candidate) setCandidateSession(data.candidate);
+      setActiveInterview(data.interview);
+      setStudentScreen('interview');
+    } catch (err: any) {
+      alert(err.message || '网络连接异常，请稍后重试');
+    } finally {
+      setIsInterviewLoading(false);
+    }
   };
 
   // Submit Answer in Interview Terminal
@@ -374,6 +422,7 @@ export default function App() {
         localStorage.removeItem('tech_last_student_id');
         localStorage.removeItem('tech_last_candidate_name');
       } catch (e) {}
+      clearStudentSession();
       await loadCandidatesAndStats(activeBatchId);
     } catch (err: any) {
       console.error('Failed to reset candidate database:', err);
@@ -409,6 +458,7 @@ export default function App() {
               localStorage.removeItem('tech_last_student_id');
               localStorage.removeItem('tech_last_candidate_name');
             } catch (e) {}
+            clearStudentSession();
           }}
           onOpenRegistration={() => setIsRegistrationOpen(true)}
           onOpenStatusQuery={() => setIsStatusQueryOpen(true)}
@@ -416,7 +466,8 @@ export default function App() {
             if (activeInterview && activeInterview.status !== 'COMPLETED') {
               setStudentScreen('interview');
             } else if (candidateSession) {
-              setStudentScreen('status');
+              if (!activeInterview) startOrResumeInterview();
+              else setStudentScreen('status');
             }
           }}
           onGoHome={() => setStudentScreen('home')}
@@ -449,7 +500,8 @@ export default function App() {
                   if (activeInterview && activeInterview.status !== 'COMPLETED') {
                     setStudentScreen('interview');
                   } else if (candidateSession) {
-                    setStudentScreen('status');
+                    if (!activeInterview) startOrResumeInterview();
+                    else setStudentScreen('status');
                   }
                 }}
                 hasActiveSession={Boolean(candidateSession)}
@@ -502,7 +554,7 @@ export default function App() {
                 </div>
                 <CandidateStatusView
                   candidate={candidateSession}
-                  onResumeInterview={() => setStudentScreen('interview')}
+                  onResumeInterview={startOrResumeInterview}
                   onRefresh={refreshCandidateSession}
                 />
               </div>
@@ -630,7 +682,6 @@ export default function App() {
       <StatusQueryModal
         isOpen={isStatusQueryOpen}
         onClose={() => setIsStatusQueryOpen(false)}
-        activeBatchId={activeBatchId}
         defaultStudentId={candidateSession?.profile?.studentId || recentStudentId}
         defaultCandidateName={candidateSession?.profile?.name || recentCandidateName}
         onCandidateFound={(cand, intv) => {

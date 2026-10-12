@@ -3,6 +3,8 @@
 // once from main.tsx before the app mounts.
 export const ADMIN_TOKEN_KEY = 'tech_admin_token';
 export const ADMIN_USER_KEY = 'tech_admin_user';
+export const STUDENT_TOKEN_KEY = 'tech_student_access_token';
+export const STUDENT_CANDIDATE_ID_KEY = 'tech_student_candidate_id';
 
 export function getAdminToken(): string {
   try {
@@ -21,35 +23,56 @@ export function clearAdminSession(): void {
   }
 }
 
+export function getStudentAccessToken(): string {
+  try {
+    return localStorage.getItem(STUDENT_TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function saveStudentSession(candidateId: string, token: string): void {
+  try {
+    localStorage.setItem(STUDENT_CANDIDATE_ID_KEY, candidateId);
+    localStorage.setItem(STUDENT_TOKEN_KEY, token);
+  } catch {
+    // The current in-memory session still works if storage is unavailable.
+  }
+}
+
+export function clearStudentSession(): void {
+  try {
+    localStorage.removeItem(STUDENT_CANDIDATE_ID_KEY);
+    localStorage.removeItem(STUDENT_TOKEN_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.toString();
   return input.url;
 }
 
-// Wraps window.fetch so every /api/ request carries the admin token when one exists.
-// The server's route whitelist remains the actual security boundary; this only
-// guarantees the token is present so admin pages don't silently receive 401s.
+// Attach the current admin or student credential to same-origin API requests.
+// The server performs the actual authorization checks.
 export function installFetchAuth(): void {
   const originalFetch = window.fetch.bind(window);
 
   window.fetch = (input: RequestInfo | URL, init: RequestInit = {}) => {
     const url = requestUrl(input);
-    const token = getAdminToken();
+    const adminToken = getAdminToken();
+    const studentToken = getStudentAccessToken();
     const isApiCall = url.includes('/api/');
 
-    if (isApiCall && token) {
-      // Request objects are mutable — set the header in place rather than rebuilding.
-      if (input instanceof Request) {
-        input.headers.set('Authorization', `Bearer ${token}`);
-        const response = originalFetch(input, init);
-        return withAuthExpiryCheck(response, url);
-      }
-
-      const headers = new Headers(init.headers);
-      headers.set('Authorization', `Bearer ${token}`);
-      const response = originalFetch(url, { ...init, headers });
-      return withAuthExpiryCheck(response, url);
+    if (isApiCall && (adminToken || studentToken)) {
+      const headers = new Headers(input instanceof Request ? input.headers : undefined);
+      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+      if (adminToken) headers.set('Authorization', `Bearer ${adminToken}`);
+      if (studentToken) headers.set('X-Student-Token', studentToken);
+      const response = originalFetch(input, { ...init, headers });
+      return adminToken ? withAuthExpiryCheck(response, url) : response;
     }
 
     return originalFetch(input, init);
