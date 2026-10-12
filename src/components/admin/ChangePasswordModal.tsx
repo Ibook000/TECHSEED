@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { X, Lock, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
 import { AdminUser } from '../../types.js';
+import {
+  getAdminPasswordPolicyError,
+  MAX_ADMIN_PASSWORD_LENGTH,
+  MIN_ADMIN_PASSWORD_LENGTH,
+} from '../../lib/passwordPolicy.js';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -27,8 +32,9 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     setError(null);
     setSuccess(null);
 
-    if (newPassword.length < 6) {
-      setError('新密码长度不能少于 6 位字符');
+    const passwordPolicyError = getAdminPasswordPolicyError(newPassword);
+    if (passwordPolicyError) {
+      setError(passwordPolicyError);
       return;
     }
 
@@ -135,9 +141,11 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               <input
                 type="password"
                 required
+                minLength={MIN_ADMIN_PASSWORD_LENGTH}
+                maxLength={MAX_ADMIN_PASSWORD_LENGTH}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="请输入您的私有新密码"
+                placeholder="请输入 12–128 个字符的新密码"
                 className="w-full rounded-[8px] border border-zinc-200 bg-white pl-9 pr-3 py-2 text-xs font-mono text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:outline-none shadow-xs"
               />
             </div>

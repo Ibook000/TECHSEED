@@ -15,6 +15,7 @@ import {
   AISettings,
   CandidateStatus,
 } from '../../src/types.js';
+import { getAdminPasswordPolicyError, isAdminPasswordValid } from '../../src/lib/passwordPolicy.js';
 
 interface DatabaseSchema {
   admin_users: AdminUser[];
@@ -261,8 +262,14 @@ class Database {
     }
 
     this.ensureAuthSecret();
-    if (!this.data.admin_passwords?.admin && !DEFAULT_ADMIN_PASSWORD) {
-      throw new Error('ADMIN_DEFAULT_PASSWORD must be set before starting with a new or passwordless database.');
+    if (!this.data.admin_passwords?.admin) {
+      if (!DEFAULT_ADMIN_PASSWORD) {
+        throw new Error('ADMIN_DEFAULT_PASSWORD must be set before starting with a new or passwordless database.');
+      }
+      const passwordError = getAdminPasswordPolicyError(DEFAULT_ADMIN_PASSWORD);
+      if (passwordError) {
+        throw new Error(`ADMIN_DEFAULT_PASSWORD ${passwordError}.`);
+      }
     }
   }
 
@@ -750,6 +757,7 @@ class Database {
   }
 
   public changePassword(username: string, newPass: string): boolean {
+    if (!isAdminPasswordValid(newPass)) return false;
     if (!this.data.admin_passwords) {
       this.data.admin_passwords = {
         admin: DEFAULT_ADMIN_PASSWORD,

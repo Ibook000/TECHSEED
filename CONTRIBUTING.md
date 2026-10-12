@@ -6,7 +6,7 @@
 
 1. 使用 Node.js 22.12 或更新的 LTS 版本。
 2. 运行 `npm ci` 安装 lockfile 中固定的依赖。
-3. 复制 `.env.example` 为 `.env`，设置唯一的 `ADMIN_DEFAULT_PASSWORD`。
+3. 复制 `.env.example` 为 `.env`，设置 12–128 个字符的 `ADMIN_DEFAULT_PASSWORD`。
 4. 运行 `npm run dev` 启动本地开发服务。
 
 ## 提交前检查

@@ -7,6 +7,7 @@ import { createServer as createViteServer } from 'vite';
 import { db } from './server/db/index.js';
 import { RecruitmentService } from './server/services/recruitment.js';
 import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION, UserRole } from './src/types.js';
+import { getAdminPasswordPolicyError } from './src/lib/passwordPolicy.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -276,15 +277,18 @@ app.post('/api/auth/change-password', (req: Request, res: Response) => {
   const cleanOld = String(oldPassword).trim();
   const cleanNew = String(newPassword).trim();
 
-  if (cleanNew.length < 6) {
-    return res.status(400).json({ success: false, error: '新管理密码长度不能少于 6 位' });
+  const passwordPolicyError = getAdminPasswordPolicyError(cleanNew);
+  if (passwordPolicyError) {
+    return res.status(400).json({ success: false, error: passwordPolicyError });
   }
 
   if (!db.verifyPassword(cleanUser, cleanOld)) {
     return res.status(401).json({ success: false, error: '原管理密码错误，无法完成修改' });
   }
 
-  db.changePassword(cleanUser, cleanNew);
+  if (!db.changePassword(cleanUser, cleanNew)) {
+    return res.status(400).json({ success: false, error: '管理员密码未符合安全要求，修改失败' });
+  }
   return res.json({ success: true, message: '后台管理密码已成功修改' });
 });
 
