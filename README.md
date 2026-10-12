@@ -59,7 +59,7 @@ flowchart LR
 npm ci
 
 # 2. 配置环境变量；新数据库初始化前必须在 .env 中设置 ADMIN_DEFAULT_PASSWORD
-copy .env.example .env
+cp .env.example .env
 
 # 3. 启动开发服务器（Express 进程内挂载 Vite 中间件，端口 3000）
 npm run dev
