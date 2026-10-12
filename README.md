@@ -95,7 +95,7 @@ npm run clean   # 清理构建产物
 | `OPENAI_API_KEY` / `OPENAI_API_KEYS` | 主 LLM 池 Key，`_KEYS` 支持逗号分隔多 Key |
 | `OPENAI_BASE_URL` / `OPENAI_MODEL` | 主 LLM 接口地址与模型名 |
 | `FALLBACK_OPENAI_*` | 降级备用池（主池全部失败时启用），变量含义同上 |
-| `LLM_MAX_CONCURRENT` | LLM 请求并发上限，默认 10 |
+| `LLM_MAX_CONCURRENT` | LLM 请求并发上限，默认 10；最多 100 个等待请求，排队超过 30 秒会降级到启发式引擎 |
 | `ADMIN_DEFAULT_PASSWORD` | 初始化新数据库前必填的管理员初始密码；没有内置默认值 |
 | `AUTH_TOKEN_SECRET` | 管理端 Token 签名密钥，留空自动生成并持久化 |
 | `DISABLE_HMR` | 设为 `true` 禁用 HMR 与文件监听（生产部署用） |

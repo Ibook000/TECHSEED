@@ -9,42 +9,72 @@ import { db } from '../db/index.js';
 class ConcurrencyLimiter {
   private maxConcurrent: number;
   private active = 0;
-  private queue: Array<() => void> = [];
+  private maxQueued: number;
+  private queueTimeoutMs: number;
+  private queue: Array<{
+    resolve: (acquired: boolean) => void;
+    timeout: NodeJS.Timeout;
+  }> = [];
+  private lastSaturationWarningAt = 0;
 
-  constructor(maxConcurrent: number) {
+  constructor(maxConcurrent: number, maxQueued: number, queueTimeoutMs: number) {
     this.maxConcurrent = maxConcurrent;
+    this.maxQueued = maxQueued;
+    this.queueTimeoutMs = queueTimeoutMs;
   }
 
-  async acquire(): Promise<void> {
+  async acquire(): Promise<boolean> {
     if (this.active < this.maxConcurrent) {
       this.active++;
-      return;
+      return true;
     }
-    return new Promise<void>((resolve) => {
-      this.queue.push(resolve);
+
+    if (this.queue.length >= this.maxQueued) {
+      this.warnSaturated();
+      return false;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      let waiter: (typeof this.queue)[number];
+      const timeout = setTimeout(() => {
+        const index = this.queue.indexOf(waiter);
+        if (index === -1) return;
+        this.queue.splice(index, 1);
+        this.warnSaturated();
+        resolve(false);
+      }, this.queueTimeoutMs);
+
+      waiter = { resolve, timeout };
+      this.queue.push(waiter);
     });
   }
 
   release(): void {
     if (this.queue.length > 0) {
       const next = this.queue.shift()!;
-      next();
+      clearTimeout(next.timeout);
+      next.resolve(true);
       // active count stays the same (one leaves, one enters)
     } else {
       this.active = Math.max(0, this.active - 1);
     }
   }
 
-  getActiveCount(): number {
-    return this.active;
+  private warnSaturated(): void {
+    const now = Date.now();
+    if (now - this.lastSaturationWarningAt < 60_000) return;
+    this.lastSaturationWarningAt = now;
+    console.warn('[AI Service] LLM queue is saturated; some requests will use heuristic fallback');
   }
 
-  getQueueLength(): number {
-    return this.queue.length;
-  }
+  async run<T>(fn: () => Promise<T>): Promise<T | null> {
+    const waiting = this.active >= this.maxConcurrent;
+    const queuePosition = this.queue.length + 1;
+    if (waiting) {
+      console.log(`[AI Service] LLM request queued, position: ${queuePosition}, active: ${this.active}`);
+    }
 
-  async run<T>(fn: () => Promise<T>): Promise<T> {
-    await this.acquire();
+    if (!(await this.acquire())) return null;
     try {
       return await fn();
     } finally {
@@ -54,6 +84,8 @@ class ConcurrencyLimiter {
 }
 
 const DEFAULT_MAX_CONCURRENT_LLM = 10;
+const MAX_QUEUED_LLM = 100;
+const LLM_QUEUE_TIMEOUT_MS = 30_000;
 const configuredMaxConcurrent = process.env.LLM_MAX_CONCURRENT?.trim();
 const parsedMaxConcurrent = configuredMaxConcurrent && /^\d+$/.test(configuredMaxConcurrent)
   ? Number(configuredMaxConcurrent)
@@ -67,9 +99,9 @@ if (configuredMaxConcurrent && !hasValidMaxConcurrent) {
   console.warn(`[AI Service] Invalid LLM_MAX_CONCURRENT; using default ${DEFAULT_MAX_CONCURRENT_LLM}`);
 }
 
-const llmLimiter = new ConcurrencyLimiter(MAX_CONCURRENT_LLM);
+const llmLimiter = new ConcurrencyLimiter(MAX_CONCURRENT_LLM, MAX_QUEUED_LLM, LLM_QUEUE_TIMEOUT_MS);
 
-console.log(`[AI Service] Concurrency limiter initialized: max ${MAX_CONCURRENT_LLM} concurrent LLM calls`);
+console.log(`[AI Service] Concurrency limiter initialized: max ${MAX_CONCURRENT_LLM} concurrent calls, ${MAX_QUEUED_LLM} queued, ${LLM_QUEUE_TIMEOUT_MS}ms queue timeout`);
 
 /**
  * Multi-API-key round-robin pool with failover.
@@ -445,11 +477,6 @@ async function callLLM(
   responseFormatJson = false
 ): Promise<string | null> {
   return llmLimiter.run(async () => {
-    const queued = llmLimiter.getQueueLength();
-    if (queued > 0) {
-      console.log(`[AI Service] LLM request queued, position: ${queued}, active: ${llmLimiter.getActiveCount()}`);
-    }
-
     // Resolve keys from database settings and environment variables on every call.
     const result = await callCustomOpenAIWithFallback(
       [
