@@ -1,0 +1,9 @@
+.git
+.env*
+data/
+dist/
+node_modules/
+output/
+coverage/
+*.log
+.DS_Store

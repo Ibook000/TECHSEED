@@ -1,0 +1,27 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:?Set ADMIN_DEFAULT_PASSWORD in .env}
+      AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_API_KEYS: ${OPENAI_API_KEYS:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      FALLBACK_OPENAI_API_KEY: ${FALLBACK_OPENAI_API_KEY:-}
+      FALLBACK_OPENAI_API_KEYS: ${FALLBACK_OPENAI_API_KEYS:-}
+      FALLBACK_OPENAI_BASE_URL: ${FALLBACK_OPENAI_BASE_URL:-}
+      FALLBACK_OPENAI_MODEL: ${FALLBACK_OPENAI_MODEL:-}
+      LLM_MAX_CONCURRENT: ${LLM_MAX_CONCURRENT:-10}
+    volumes:
+      - techseed-data:/app/data
+
+volumes:
+  techseed-data:

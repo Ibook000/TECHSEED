@@ -38,3 +38,18 @@ jobs:
 
       - name: Build production artifacts
         run: npm run build
+
+  container-build:
+    name: Build container image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Validate Compose configuration
+        env:
+          ADMIN_DEFAULT_PASSWORD: ci-validation-only
+        run: docker compose config --quiet
+
+      - name: Build Docker image
+        run: docker build --tag techseed:ci .

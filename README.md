@@ -153,6 +153,27 @@ data/                   # 运行时数据库（不入版本控制，首次启动
 
 ## 部署说明
 
+### Docker Compose
+
+需要安装 Docker Compose。首次启动前，复制并编辑环境变量文件，至少设置一个唯一且足够强的管理员初始密码：
+
+```bash
+cp .env.example .env
+# 编辑 .env，设置 ADMIN_DEFAULT_PASSWORD；按需配置 AI 服务
+docker compose up -d --build
+```
+
+服务默认只绑定到本机 `127.0.0.1:3000`，可以通过本机反向代理接入，并在代理层启用 HTTPS。首次创建的数据库保存在 `techseed-data` 命名卷中；容器重建不会删除数据。查看运行状态和日志：
+
+```bash
+docker compose ps
+docker compose logs -f app
+```
+
+停止服务时使用 `docker compose down`。删除命名卷会永久删除招新数据；日常升级不要附加 `-v` 参数。
+
+### PM2
+
 生产环境使用 PM2 托管（参考 `ecosystem.config.cjs`）：
 
 ```bash
