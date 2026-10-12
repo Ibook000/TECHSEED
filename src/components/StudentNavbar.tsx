@@ -39,7 +39,7 @@ export const StudentNavbar: React.FC<StudentNavbarProps> = ({
             <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500 tracking-wider">
               <span className="text-amber-600 font-bold">学生会技术部</span>
               <span>·</span>
-              <span>信电学院 2026</span>
+              <span>xxxxx学院 2026</span>
             </div>
           </div>
         </button>

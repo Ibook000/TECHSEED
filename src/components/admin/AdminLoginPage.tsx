@@ -76,7 +76,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
             <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500 tracking-wider">
               <span className="text-amber-800 font-semibold">学生会技术部</span>
               <span>·</span>
-              <span>信电学院管理后台</span>
+              <span>xxxxx学院管理后台</span>
             </div>
           </div>
         </div>
@@ -184,7 +184,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-zinc-200 bg-white py-4 text-center font-mono text-[11px] text-zinc-500">
-        © 2026 黎明职业大学信息与电子工程学院学生会技术部 · 招新管理后台
+        © 2026 xxxxx学院学生会技术部 · 招新管理后台
       </footer>
     </div>
   );

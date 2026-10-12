@@ -99,7 +99,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               填写基本信息 · 开启初筛
             </h2>
             <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-zinc-600 font-sans leading-relaxed break-words">
-              真实表达即可，信电学院学生会技术部看重自学排障与动手热情，零基础同学完全不影响录用。
+              真实表达即可，xxxxx学院学生会技术部看重自学排障与动手热情，零基础同学完全不影响录用。
             </p>
           </div>
           <button

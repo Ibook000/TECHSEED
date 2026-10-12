@@ -664,7 +664,7 @@ export default function App() {
 
       {/* Footer */}
       <div className="mt-24 border-t border-zinc-200 pt-8 pb-12 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px] text-zinc-500">
-        <div>© 2026 黎明职业大学 信息与电子工程学院学生会技术部</div>
+        <div>© 2026 xxxxx学院学生会技术部</div>
         <div className="flex items-center gap-3 text-zinc-400 text-[10px]">
           <span className="text-amber-600 font-medium">学生会技术部</span>
           <span>·</span>

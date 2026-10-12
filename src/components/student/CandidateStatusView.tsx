@@ -239,7 +239,7 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
                   JOIN TECH DEPARTMENT
                 </h3>
                 <p className="text-xs text-zinc-600 font-sans leading-relaxed pt-1 max-w-xl">
-                  恭喜你通过技术部初筛与综合评定，欢迎正式成为黎明职大信电学院学生会技术部的一员！请保存并加入官方招新群。
+                  恭喜你通过技术部初筛与综合评定，欢迎正式成为 xxxxx学院学生会技术部的一员！请保存并加入官方招新群。
                 </p>
               </div>
               <PgyMascot size="lg" variant="glow" className="shrink-0 self-center sm:self-auto" />
@@ -267,7 +267,7 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
                   {/* QR Title & Advice */}
                   <div className="text-center max-w-sm">
                     <p className="text-xs font-bold text-amber-800 font-mono tracking-wide">
-                      {qrData.qr.title || '信电学院技术部 · 2026 招新官方微信群'}
+                      {qrData.qr.title || 'xxxxx学院技术部 · 2026 招新官方微信群'}
                     </p>
                     <p className="text-[11px] text-zinc-500 font-mono mt-1 leading-relaxed">
                       进群后请将群昵称修改为：<span className="text-zinc-800 font-medium">专业班级-姓名</span>（如：物联网2601-张三）

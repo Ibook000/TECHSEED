@@ -1,6 +1,6 @@
 # TECHSEED AI 招新系统
 
-黎明职业大学信息与电子学院学生会技术部 AI 招新系统（Tech Dept AI Recruitment System）。
+xxxxx学院学生会技术部 AI 招新系统（Tech Dept AI Recruitment System）。
 
 单页应用实现完整招新流水线：学生注册 → AI 面试 → 智能评估 → 管理端审核 → 微信群准入。
 

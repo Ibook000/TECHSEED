@@ -63,7 +63,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
 
           {/* Subtitle */}
           <p className="text-base sm:text-lg text-zinc-600 font-sans leading-relaxed max-w-2xl">
-            面向信息与电子工程学院全体大一新生。啥也不会没关系，只要想学、积极、开朗的同学就可以！
+            面向 xxxxx学院全体大一新生。啥也不会没关系，只要想学、积极、开朗的同学就可以！
           </p>
 
           {/* Key Metrics / Technical Data Grid */}
