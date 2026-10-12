@@ -1,0 +1,18 @@
+# 依赖与构建产物
+node_modules/
+build/
+dist/
+coverage/
+# 运行时数据（JSON 文件数据库，含真实学生记录与凭据，禁止入库）
+data/
+
+# 环境变量与密钥
+.env*
+!.env.example
+
+# 本地工具配置
+.claude/settings.local.json
+
+# 系统与日志
+.DS_Store
+*.log

@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-bg-primary: #FAFAFA;
+    --color-bg-surface: #FFFFFF;
+    --color-bg-card: #FFFFFF;
+    --color-accent: #EAB308;
+    --color-accent-light: #FACC15;
+    --color-accent-dark: #CA8A04;
+  }
+
+  body {
+    background-color: #FAFAFA;
+    color: #18181B;
+    font-family: -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", "PingFang SC", "Segoe UI", Roboto, sans-serif;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.28);
+  }
+}
+
+/* Subtle Technical Grid Background on White */
+.tech-grid-bg {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+/* Warm Golden Glow for AI and Active states */
+.warm-gold-glow {
+  box-shadow: 0 0 24px -4px rgba(234, 179, 8, 0.28);
+}
+
+.warm-gold-glow-sm {
+  box-shadow: 0 0 12px -2px rgba(234, 179, 8, 0.35);
+}
+
