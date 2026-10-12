@@ -688,10 +688,11 @@ ${candidateConversation}
 2. 不因回答长度、表达流畅度、错别字、紧张、教育背景或缺少项目经历推断能力、性格、诚信或兴趣。
 3. 技术基础只占 10%，作为培养起点；不得把零基础本身当作淘汰理由。
 4. 真实性/一致性只记录可观察的前后矛盾或待核实事实。语言风格不能证明套话或不诚实。
-5. recommendation_reason 写成人工复核的证据与追问建议；AI 等级和分数均为辅助信息，不能单独决定录用或淘汰。
-6. candidate_type 只使用中性标签描述已有材料或待核实信息，不给候选人贴能力、性格或潜力标签。
-7. overall_score 必须等于六项 scores 按权重计算的加权分；recommendation 按该分数映射：S>=90，A>=80，B>=70，C<70。
-8. 严格按照下列 JSON 结构返回：
+5. anti_template_flag 是历史兼容字段，必须为 false；不要仅凭措辞或回答风格判断套话。
+6. recommendation_reason 写成人工复核的证据与追问建议；AI 等级和分数均为辅助信息，不能单独决定录用或淘汰。
+7. candidate_type 只使用中性标签描述已有材料或待核实信息，不给候选人贴能力、性格或潜力标签。
+8. overall_score 必须等于六项 scores 按权重计算的加权分；recommendation 按该分数映射：S>=90，A>=80，B>=70，C<70。
+9. 严格按照下列 JSON 结构返回：
 {
   "overall_score": 88,
   "recommendation": "S" | "A" | "B" | "C",
@@ -705,7 +706,6 @@ ${candidateConversation}
     "technical_foundation": 60
   },
   "quality": {
-    "authenticity_score": 90,
     "specificity_score": 88,
     "consistency_score": 92
   },
@@ -748,7 +748,7 @@ ${candidateConversation}
             : '待人工复核',
           scores,
           quality: {
-            authenticity_score: readOptionalScore(data.quality?.authenticity_score),
+            authenticity_score: 50,
             specificity_score: readOptionalScore(data.quality?.specificity_score),
             consistency_score: readOptionalScore(data.quality?.consistency_score),
           },
@@ -760,7 +760,7 @@ ${candidateConversation}
           recommendationReason: typeof data.recommendation_reason === 'string' && data.recommendation_reason.trim()
             ? data.recommendation_reason.trim().slice(0, 800)
             : '请管理员结合完整面试记录进行人工复核。',
-          antiTemplateFlag: data.anti_template_flag === true,
+          antiTemplateFlag: false,
           templateAnalysis: typeof data.template_analysis === 'string' && data.template_analysis.trim()
             ? data.template_analysis.trim().slice(0, 800)
             : '信息不足；不根据回答长度或语言风格判断套话或真实性。',

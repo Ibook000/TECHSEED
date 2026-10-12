@@ -103,9 +103,9 @@ export interface CapabilityScores {
 }
 
 export interface QualityScores {
-  authenticity_score: number;     // 真实度/非虚构
-  specificity_score: number;      // 具体度/细节深度
-  consistency_score: number;      // 前后一致性
+  authenticity_score: number;     // Legacy compatibility field; new evaluations keep this neutral.
+  specificity_score: number;      // Observable detail in the answers
+  consistency_score: number;      // Observable consistency across answers
 }
 
 export interface AIEvaluation {
