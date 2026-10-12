@@ -1,4 +1,5 @@
 import { db } from '../db/index.js';
+import { HttpError } from '../errors.js';
 import {
   Candidate,
   CandidateStatus,
@@ -79,7 +80,7 @@ export class RecruitmentService {
   private static async _startOrResumeInterview(candidateId: string) {
     const candidate = db.getCandidateById(candidateId);
     if (!candidate) {
-      throw new Error('候选人信息不存在');
+      throw new HttpError('候选人信息不存在', 404);
     }
 
     let interview = db.getInterviewByCandidateId(candidateId);
@@ -134,11 +135,11 @@ export class RecruitmentService {
     const interview = db.getInterviewByCandidateId(candidateId);
 
     if (!candidate || !interview) {
-      throw new Error('面试或候选人不存在');
+      throw new HttpError('面试或候选人不存在', 404);
     }
 
     if (interview.status === 'COMPLETED') {
-      throw new Error('该面试已完成，不可重复提交回答');
+      throw new HttpError('该面试已完成，不可重复提交回答', 409);
     }
 
     const now = new Date().toISOString();
@@ -193,7 +194,7 @@ export class RecruitmentService {
     const interview = db.getInterviewByCandidateId(candidateId);
 
     if (!candidate || !interview) {
-      throw new Error('候选人或面试不存在');
+      throw new HttpError('候选人或面试不存在', 404);
     }
 
     // Idempotent: if already completed, return existing result
@@ -235,7 +236,7 @@ export class RecruitmentService {
    */
   public static admitCandidate(candidateId: string, operator = 'admin', comment = '技术部审核通过，正式录取为技术部成员') {
     const candidate = db.getCandidateById(candidateId);
-    if (!candidate) throw new Error('候选人不存在');
+    if (!candidate) throw new HttpError('候选人不存在', 404);
 
     db.updateCandidateStatus(candidateId, 'ADMITTED', operator, comment);
     return db.getCandidateById(candidateId);
@@ -246,7 +247,7 @@ export class RecruitmentService {
    */
   public static rejectCandidate(candidateId: string, operator = 'admin', reason = '综合考量未予录用') {
     const candidate = db.getCandidateById(candidateId);
-    if (!candidate) throw new Error('候选人不存在');
+    if (!candidate) throw new HttpError('候选人不存在', 404);
 
     db.updateCandidateStatus(candidateId, 'MANUAL_REJECTED', operator, reason);
     return db.getCandidateById(candidateId);
@@ -257,7 +258,7 @@ export class RecruitmentService {
    */
   public static confirmGroupJoin(candidateId: string) {
     const candidate = db.getCandidateById(candidateId);
-    if (!candidate) throw new Error('候选人不存在');
+    if (!candidate) throw new HttpError('候选人不存在', 404);
 
     const allowedStatuses: CandidateStatus[] = [
       'MANUAL_PASSED',
@@ -268,7 +269,7 @@ export class RecruitmentService {
     ];
 
     if (!allowedStatuses.includes(candidate.status)) {
-      throw new Error('未获录取资格，暂无入群权限');
+      throw new HttpError('未获录取资格，暂无入群权限', 403);
     }
 
     db.updateCandidateStatus(candidateId, 'GROUP_JOIN_CONFIRMED', 'student', '学生在客户端确认已扫码加入技术部招新微信群');

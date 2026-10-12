@@ -6,6 +6,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/db/index.js';
 import { RecruitmentService } from './server/services/recruitment.js';
+import { HttpError } from './server/errors.js';
 import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION, UserRole } from './src/types.js';
 import { getAdminPasswordPolicyError } from './src/lib/passwordPolicy.js';
 
@@ -14,6 +15,15 @@ const PORT = Number(process.env.PORT) || 3000;
 const trustedProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
 if (Number.isInteger(trustedProxyHops) && trustedProxyHops > 0 && trustedProxyHops <= 10) {
   app.set('trust proxy', trustedProxyHops);
+}
+
+function respondWithRouteError(res: Response, error: unknown, context: string, fallbackMessage: string): Response {
+  if (error instanceof HttpError) {
+    return res.status(error.statusCode).json({ error: error.message });
+  }
+
+  console.error(`[HTTP] ${context} failed:`, error);
+  return res.status(500).json({ error: fallbackMessage });
 }
 
 app.use((_req: Request, res: Response, next: NextFunction) => {
@@ -347,7 +357,7 @@ app.post('/api/upload-logo', (req: Request, res: Response) => {
 
     return res.json({ success: true, url: '/PGY_logo.png?v=' + Date.now() });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message || '上传 Logo 失败' });
+    return respondWithRouteError(res, err, 'Logo upload', '上传 Logo 失败，请稍后重试');
   }
 });
 
@@ -357,7 +367,7 @@ app.post('/api/admin/clear-data', (req: Request, res: Response) => {
     db.clearCandidateData();
     res.json({ success: true, message: '测试数据已全部清空，您可以从新生端开始全新测试！' });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || '清空失败' });
+    return respondWithRouteError(res, err, 'Candidate data reset', '清空失败，请稍后重试');
   }
 });
 
@@ -416,7 +426,7 @@ app.post('/api/candidates', registrationRateLimit, (req: Request, res: Response)
     db.setStudentAccessTokenHash(candidate.id, createHash('sha256').update(studentToken).digest('hex'));
     return res.status(201).json({ candidate: redactCandidate(candidate), studentToken, isNew: true });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message || '注册失败' });
+    return respondWithRouteError(res, err, 'Candidate registration', '报名失败，请稍后重试');
   }
 });
 
@@ -565,7 +575,7 @@ app.post('/api/candidates/:id/admit', (req: Request, res: Response) => {
     const result = RecruitmentService.admitCandidate(req.params.id, operator || 'admin', comment);
     res.json(result);
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    return respondWithRouteError(res, err, 'Candidate admission', '审核操作失败，请稍后重试');
   }
 });
 
@@ -576,7 +586,7 @@ app.post('/api/candidates/:id/reject', (req: Request, res: Response) => {
     const result = RecruitmentService.rejectCandidate(req.params.id, operator || 'admin', reason);
     res.json(result);
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    return respondWithRouteError(res, err, 'Candidate rejection', '审核操作失败，请稍后重试');
   }
 });
 
@@ -592,7 +602,7 @@ app.post('/api/candidates/:id/manual-review', (req: Request, res: Response) => {
       return res.json({ candidate: cand });
     }
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    return respondWithRouteError(res, err, 'Legacy manual review', '审核操作失败，请稍后重试');
   }
 });
 
@@ -629,7 +639,7 @@ app.post('/api/candidates/:id/join-confirm', (req: Request, res: Response) => {
     const candidate = RecruitmentService.confirmGroupJoin(req.params.id);
     res.json({ success: true, candidate: redactCandidate(candidate) });
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    return respondWithRouteError(res, err, 'Group join confirmation', '入群确认失败，请稍后重试');
   }
 });
 
@@ -649,7 +659,7 @@ app.post('/api/interviews', interviewStartRateLimit, interviewStartCandidateRate
       interview: redactInterview(result.interview),
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return respondWithRouteError(res, err, 'Interview start', '面试暂时无法开始，请稍后重试');
   }
 });
 
@@ -671,7 +681,7 @@ app.post('/api/interviews/:id/answer', interviewAnswerRateLimit, async (req: Req
     const result = await RecruitmentService.submitAnswer(req.params.id, answer);
     res.json({ ...result, interview: redactInterview(result.interview) });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return respondWithRouteError(res, err, 'Interview answer submission', '回答暂时无法提交，请稍后重试');
   }
 });
 
@@ -681,7 +691,7 @@ app.post('/api/interviews/:id/complete', interviewCompleteRateLimit, async (req:
     const result = await RecruitmentService.completeInterview(req.params.id);
     res.json({ ...result, interview: redactInterview(result.interview) });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return respondWithRouteError(res, err, 'Interview completion', '面试暂时无法完成，请稍后重试');
   }
 });
 
