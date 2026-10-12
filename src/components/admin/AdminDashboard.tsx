@@ -60,17 +60,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Grade Distribution
   const gradeData = [
-    { name: 'S 级 (强烈推荐)', count: stats.gradeDistribution.S, grade: 'S' },
-    { name: 'A 级 (推荐录用)', count: stats.gradeDistribution.A, grade: 'A' },
+    { name: 'S 级 (高分)', count: stats.gradeDistribution.S, grade: 'S' },
+    { name: 'A 级 (较高分)', count: stats.gradeDistribution.A, grade: 'A' },
     { name: 'B 级 (综合考量)', count: stats.gradeDistribution.B, grade: 'B' },
-    { name: 'C 级 (暂不推荐)', count: stats.gradeDistribution.C, grade: 'C' },
+    { name: 'C 级 (需重点复核)', count: stats.gradeDistribution.C, grade: 'C' },
   ];
 
   // Funnel steps
   const funnelSteps = [
     { label: '新生报名', count: stats.totalRegistered },
     { label: 'AI 初筛完成', count: stats.aiCompleted },
-    { label: 'AI 推荐人选', count: stats.aiRecommended },
+    { label: 'AI 建议优先复核', count: stats.aiRecommended },
     { label: '正式录取', count: stats.admittedCount },
     { label: '已扫码入群', count: stats.groupJoinConfirmed },
   ];
@@ -126,7 +126,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           className="cursor-pointer rounded-[12px] border border-amber-200 bg-amber-50/40 p-3.5 transition-all hover:border-amber-400 hover:bg-amber-50/70 shadow-xs"
         >
           <div className="flex items-center justify-between text-amber-700">
-            <span className="font-mono text-[10px] uppercase tracking-wider font-bold">AI推荐</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider font-bold">AI建议复核</span>
             <Award className="h-3.5 w-3.5 text-amber-600" />
           </div>
           <div className="mt-2 font-mono text-2xl font-bold text-amber-700">
@@ -201,7 +201,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {funnelSteps.map((step, idx) => {
             const prevCount = idx > 0 ? funnelSteps[idx - 1].count : step.count;
             const convRate = prevCount > 0 ? Math.round((step.count / prevCount) * 100) : 0;
-            const isHighlighted = step.label === 'AI 推荐人选' || step.label === '正式录取';
+            const isHighlighted = step.label === 'AI 建议优先复核' || step.label === '正式录取';
             return (
               <div
                 key={step.label}
@@ -295,7 +295,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span className="text-amber-600 font-semibold">S: 极高自驱/核心骨干</span>
             <span className="text-emerald-600 font-semibold">A: 综合素质突出</span>
             <span className="text-blue-600 font-semibold">B: 潜质良好可培养</span>
-            <span className="text-zinc-400">C: 暂不推荐</span>
+            <span className="text-zinc-400">C: 需人工重点复核</span>
           </div>
         </div>
       </div>

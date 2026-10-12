@@ -44,6 +44,20 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
 
   const isGroupConfirmed = status === 'GROUP_JOIN_CONFIRMED' || joinSuccess;
   const isRejected = status === 'MANUAL_REJECTED';
+  const isAiScreeningComplete = [
+    'AI_COMPLETED',
+    'AI_RECOMMENDED',
+    'AI_NOT_RECOMMENDED',
+    'WAITING_MANUAL_INTERVIEW',
+    'MANUAL_INTERVIEWING',
+    'MANUAL_PASSED',
+    'MANUAL_REJECTED',
+    'MANUAL_WAITLIST',
+    'ADMITTED',
+    'QR_AVAILABLE',
+    'GROUP_JOIN_PENDING',
+    'GROUP_JOIN_CONFIRMED',
+  ].includes(status);
 
   // Fetch WeChat QR if authorized
   useEffect(() => {
@@ -166,7 +180,7 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
             {/* Step 2 */}
             <div
               className={`rounded-[14px] border p-3.5 transition-all shadow-xs ${
-                ['AI_COMPLETED', 'AI_RECOMMENDED', 'ADMITTED', 'MANUAL_PASSED', 'GROUP_JOIN_CONFIRMED', 'MANUAL_REJECTED'].includes(status)
+                isAiScreeningComplete
                   ? 'border-amber-200 bg-amber-50/70 text-amber-800'
                   : status === 'AI_INTERVIEWING'
                   ? 'border-amber-400 bg-amber-100/50 text-amber-900'
@@ -175,7 +189,7 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
             >
               <div className="flex items-center justify-between font-bold uppercase tracking-wider text-[11px]">
                 <span>02 AI 初筛</span>
-                {['AI_COMPLETED', 'AI_RECOMMENDED', 'ADMITTED', 'MANUAL_PASSED', 'GROUP_JOIN_CONFIRMED', 'MANUAL_REJECTED'].includes(status) ? (
+                {isAiScreeningComplete ? (
                   <CheckCircle2 className="h-4 w-4 text-amber-600" />
                 ) : (
                   <Clock className="h-4 w-4 text-amber-500" />
@@ -184,7 +198,7 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
               <p className="mt-1 text-[10px] text-zinc-500 tracking-wider">
                 {status === 'AI_INTERVIEWING'
                   ? '初筛进行中'
-                  : ['AI_COMPLETED', 'AI_RECOMMENDED', 'ADMITTED', 'MANUAL_PASSED', 'GROUP_JOIN_CONFIRMED', 'MANUAL_REJECTED'].includes(status)
+                  : isAiScreeningComplete
                   ? '初筛已完成'
                   : '待开启'}
               </p>
@@ -364,6 +378,9 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
             </h3>
             <p className="text-xs text-zinc-600 leading-relaxed max-w-lg">
               技术部管理员将结合你的报名初衷与 AI 初筛报告进行审核，录取结果与招新微信群二维码将第一时间同步于此页面。
+            </p>
+            <p className="text-[11px] text-zinc-500 leading-relaxed max-w-lg">
+              AI 评分仅作辅助参考，不会单独作为淘汰依据；最终结果由管理员综合审核后确定。
             </p>
           </div>
         )}

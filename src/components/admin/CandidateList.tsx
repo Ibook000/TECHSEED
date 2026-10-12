@@ -61,14 +61,14 @@ const STATUS_TEXT: Record<CandidateStatus, { label: string; color: string; rank:
   MANUAL_PASSED: { label: '已正式录取', color: 'text-amber-900 bg-amber-100 border-amber-300 font-bold', rank: 8 },
   QR_AVAILABLE: { label: '已开放群二维码', color: 'text-amber-800 bg-amber-50 border-amber-200', rank: 7 },
   GROUP_JOIN_PENDING: { label: '待扫码入群', color: 'text-amber-700 bg-amber-50 border-amber-200', rank: 6 },
-  AI_RECOMMENDED: { label: 'AI推荐录用', color: 'text-amber-800 bg-amber-50 border-amber-200 font-semibold', rank: 5 },
-  AI_COMPLETED: { label: 'AI面试已完成', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', rank: 4 },
+  AI_RECOMMENDED: { label: 'AI初筛建议优先复核', color: 'text-amber-800 bg-amber-50 border-amber-200 font-semibold', rank: 5 },
+  AI_COMPLETED: { label: 'AI初筛完成 · 待人工审核', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', rank: 4 },
   AI_INTERVIEWING: { label: 'AI面试进行中', color: 'text-amber-700 bg-amber-50 border-amber-200', rank: 3 },
   WAITING_MANUAL_INTERVIEW: { label: '待审核', color: 'text-amber-700 bg-amber-50 border-amber-200', rank: 2 },
   MANUAL_INTERVIEWING: { label: '审核中', color: 'text-amber-700 bg-amber-50 border-amber-200', rank: 2 },
   REGISTERED: { label: '已报名待面试', color: 'text-zinc-600 bg-zinc-50 border-zinc-200', rank: 1 },
   MANUAL_WAITLIST: { label: '候补观察名单', color: 'text-indigo-700 bg-indigo-50 border-indigo-200', rank: 0 },
-  AI_NOT_RECOMMENDED: { label: 'AI暂不推荐', color: 'text-zinc-400 bg-zinc-50 border-zinc-200', rank: -1 },
+  AI_NOT_RECOMMENDED: { label: 'AI初筛需人工复核', color: 'text-zinc-500 bg-zinc-50 border-zinc-200', rank: 2 },
   MANUAL_REJECTED: { label: '未予录用', color: 'text-zinc-400 bg-zinc-50 border-zinc-200', rank: -2 },
 };
 
@@ -158,7 +158,7 @@ export const CandidateList: React.FC<CandidateListProps> = ({
     // Presets
     if (selectedPreset === 'S') return c.aiRecommendation === 'S';
     if (selectedPreset === 'AI_RECOMMENDED') {
-      return c.aiRecommendation === 'S' || c.aiRecommendation === 'A' || c.status === 'AI_RECOMMENDED';
+      return ['S', 'A', 'B'].includes(c.aiRecommendation || '') || c.status === 'AI_RECOMMENDED';
     }
     if (selectedPreset === 'ZERO_FOUNDATION') {
       return (
@@ -170,7 +170,7 @@ export const CandidateList: React.FC<CandidateListProps> = ({
       return ['ADMITTED', 'MANUAL_PASSED', 'GROUP_JOIN_CONFIRMED'].includes(c.status);
     }
     if (selectedPreset === 'REJECTED') {
-      return c.status === 'MANUAL_REJECTED' || c.status === 'AI_NOT_RECOMMENDED';
+      return c.status === 'MANUAL_REJECTED';
     }
     if (selectedPreset === 'GROUP_CONFIRMED') {
       return c.status === 'GROUP_JOIN_CONFIRMED';
@@ -314,7 +314,7 @@ export const CandidateList: React.FC<CandidateListProps> = ({
         <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-[0.2em] mr-2 font-bold">Presets:</span>
         {[
           { id: 'ALL', label: '全部候选人' },
-          { id: 'S', label: 'S 级强烈推荐' },
+          { id: 'S', label: 'S 级较高分' },
           { id: 'ZERO_FOUNDATION', label: '高潜力 · 零基础' },
           { id: 'ADMITTED', label: '已正式录取' },
           { id: 'PENDING_GROUP', label: '待扫码进群' },
@@ -332,6 +332,10 @@ export const CandidateList: React.FC<CandidateListProps> = ({
             {p.label}
           </button>
         ))}
+      </div>
+
+      <div className="rounded-[8px] border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+        AI 评分只用于整理初筛线索。所有完成 AI 面试的候选人都会进入人工审核，系统不会按 AI 等级自动淘汰。
       </div>
 
       {/* Control Bar: Search + Filter + Export + Active Sort Indicator */}
@@ -415,17 +419,17 @@ export const CandidateList: React.FC<CandidateListProps> = ({
           </div>
 
           <div>
-            <label className="text-zinc-500 block mb-1 uppercase tracking-wider text-[10px] font-semibold">AI 推荐等级</label>
+            <label className="text-zinc-500 block mb-1 uppercase tracking-wider text-[10px] font-semibold">AI 初筛等级</label>
             <select
               value={gradeFilter}
               onChange={e => setGradeFilter(e.target.value)}
               className="w-full rounded-[6px] border border-zinc-200 bg-white p-2 text-zinc-800 focus:border-amber-400 focus:outline-none shadow-xs"
             >
               <option value="ALL">全部等级</option>
-              <option value="S">S 级 (强烈推荐)</option>
-              <option value="A">A 级 (推荐复试)</option>
-              <option value="B">B 级 (可培养)</option>
-              <option value="C">C 级 (暂不推荐)</option>
+              <option value="S">S 级 (高分，需人工审核)</option>
+              <option value="A">A 级 (较高分，需人工审核)</option>
+              <option value="B">B 级 (可培养，需人工审核)</option>
+              <option value="C">C 级 (需重点人工复核)</option>
             </select>
           </div>
 

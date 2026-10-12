@@ -229,7 +229,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                 </span>
                 {evaluation?.recommendation && (
                   <span className="rounded-[4px] bg-amber-100 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-900 border border-amber-300">
-                    AI 等级: {evaluation.recommendation} ({evaluation.overallScore} 分)
+                    AI 初筛等级（仅供参考）: {evaluation.recommendation} ({evaluation.overallScore} 分)
                   </span>
                 )}
               </div>
@@ -421,6 +421,9 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
           ) : activeTab === 'report' ? (
             /* TAB 1: AI PORTRAIT & EVALUATION REPORT */
             <div className="space-y-6">
+              <div className="rounded-[8px] border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-900">
+                AI 报告用于整理面试线索，所有候选人均由管理员人工审核。AI 等级不会自动决定录用或淘汰。
+              </div>
               {evaluation ? (
                 <>
                   {/* Top Score & Persona Banner */}
@@ -431,9 +434,16 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                         {evaluation.recommendation}
                       </div>
                       <div className="flex items-center justify-between text-zinc-500 font-mono text-[10px] uppercase tracking-wider">
-                        <span>AI 综合初筛评分</span>
+                        <span>AI 初筛参考分</span>
                         <Award className="h-4 w-4 text-amber-600" />
                       </div>
+                      <span className="mt-1 inline-flex w-fit rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-zinc-500">
+                        {evaluation.evaluationSource === 'heuristic'
+                          ? '规则评分 · 语义能力有限'
+                          : evaluation.evaluationSource === 'llm'
+                          ? 'AI 结构化评估'
+                          : '历史报告 · 评估方式未记录'}
+                      </span>
                       <div className="my-3 flex items-baseline gap-2">
                         <span className="font-mono text-5xl font-extrabold text-zinc-900">
                           {evaluation.overallScore}
@@ -441,7 +451,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                         <span className="font-mono text-xs text-zinc-400">/ 100 PTS</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-zinc-500 uppercase">候选人画像定位:</span>
+                        <span className="text-[10px] font-mono text-zinc-500 uppercase">报告标签:</span>
                         <span className="text-xs font-mono font-bold text-amber-800">
                           {evaluation.candidateType || '高潜力自驱型'}
                         </span>
@@ -451,7 +461,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                     {/* Radar Chart */}
                     <div className="rounded-[12px] border border-zinc-200 bg-white p-4 flex flex-col items-center justify-center min-h-[220px] shadow-xs">
                       <span className="self-start font-mono text-[10px] text-zinc-500 uppercase tracking-wider mb-2 font-semibold">
-                        六维能力雷达图谱
+                        六个初筛维度参考分
                       </span>
                       <div className="w-full h-44">
                         <ResponsiveContainer width="100%" height="100%">
@@ -460,7 +470,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                             <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717A', fontSize: 10 }} />
                             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
                             <Radar
-                              name="综合能力"
+                              name="AI 参考分"
                               dataKey="candidateScore"
                               stroke="#EAB308"
                               fill="#FACC15"
@@ -477,7 +487,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                       <div>
                         <div className="text-[10px] font-mono text-amber-800 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
                           <CheckCircle className="h-3.5 w-3.5 text-amber-600" />
-                          <span>显著优势与亮点</span>
+                          <span>回答中提到的线索</span>
                         </div>
                         <ul className="space-y-1.5 text-xs text-zinc-700 font-mono">
                           {(evaluation.strengths || (evaluation as any).highlights || []).map((h: string, i: number) => (
@@ -492,7 +502,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                       {((evaluation.risks && evaluation.risks.length > 0) || ((evaluation as any).weaknesses && (evaluation as any).weaknesses.length > 0)) && (
                         <div className="pt-3 border-t border-zinc-100">
                           <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider font-bold mb-1.5">
-                            潜在短板 / 需帮带方向
+                            待核实信息 / 培养关注点
                           </div>
                           <ul className="space-y-1 text-xs text-zinc-500 font-mono">
                             {(evaluation.risks || (evaluation as any).weaknesses || []).map((w: string, i: number) => (
@@ -511,7 +521,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   <div className="rounded-[12px] border border-zinc-200 bg-zinc-50/70 p-5 space-y-3 font-sans shadow-xs">
                     <div>
                       <h4 className="font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                        AI 综合画像总结
+                        AI 初筛摘要
                       </h4>
                       <p className="mt-1 text-xs text-zinc-700 leading-relaxed font-mono">
                         {evaluation.summary}
@@ -520,7 +530,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
                     <div className="pt-3 border-t border-zinc-200/60">
                       <h4 className="font-mono text-[10px] font-bold text-amber-800 uppercase tracking-wider">
-                        对技术部的综合录用建议
+                        人工复核提示
                       </h4>
                       <p className="mt-1 text-xs text-zinc-700 leading-relaxed font-mono">
                         {evaluation.recommendationReason}
@@ -529,7 +539,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
                     {evaluation.templateAnalysis && (
                       <div className="pt-2 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
-                        防套话检测: {evaluation.templateAnalysis}
+                        回答证据提示: {evaluation.templateAnalysis}
                       </div>
                     )}
                   </div>

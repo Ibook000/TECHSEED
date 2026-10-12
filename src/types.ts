@@ -122,6 +122,7 @@ export interface AIEvaluation {
   recommendationReason: string;
   antiTemplateFlag: boolean;
   templateAnalysis?: string;
+  evaluationSource?: 'llm' | 'heuristic';
   evaluatedAt: string;
 }
 

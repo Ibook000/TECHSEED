@@ -124,19 +124,20 @@ npm run clean   # 清理构建产物
 ### 候选人状态流转
 
 ```
-REGISTERED → AI_INTERVIEWING → AI_COMPLETED → AI_RECOMMENDED / AI_NOT_RECOMMENDED
-  → WAITING_MANUAL_INTERVIEW → MANUAL_INTERVIEWING
-  → MANUAL_PASSED → QR_AVAILABLE → GROUP_JOIN_PENDING → GROUP_JOIN_CONFIRMED → ADMITTED
+REGISTERED → AI_INTERVIEWING → AI_COMPLETED → ADMITTED → GROUP_JOIN_CONFIRMED
+                                      └──────→ MANUAL_REJECTED
 ```
 
-离线/终止状态：`MANUAL_REJECTED`（淘汰）、`MANUAL_WAITLIST`（候补）。
+AI 面试完成后，所有候选人都进入人工审核。AI 等级和分数只用于整理初筛线索，不会触发自动录用或淘汰；C 级也需要管理员结合完整面试记录复核。旧数据库中的 `AI_RECOMMENDED`、`AI_NOT_RECOMMENDED` 等状态仍保留兼容，新评估不再按 AI 等级写入这些状态。
+
+AI 服务不可用或返回内容无法解析时，系统会使用规则评分作为临时参考，并在报告中标明“规则评分 · 语义能力有限”。规则评分不根据回答长度推断表达能力，也不能替代人工审核。
 
 ### 评估维度与权重
 
-启发式引擎与 AI 提示词共用同一套权重：
+AI 报告与规则评分使用同一套维度权重：
 
 - learning 25% · initiative 20% · logic 20% · technology_interest 15% · communication 10% · technical_foundation 10%
-- 评级：S ≥ 90，A ≥ 80，B ≥ 70，C < 70
+- 等级：S ≥ 90，A ≥ 80，B ≥ 70，C < 70。等级是审核参考，不是录取结论。
 
 ## 项目结构
 

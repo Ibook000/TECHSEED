@@ -219,9 +219,14 @@ export class RecruitmentService {
     // Update candidate's score and grade
     db.updateCandidateScores(candidateId, evaluation.overallScore, evaluation.recommendation, evaluation.candidateType);
 
-    // Set status to AI_RECOMMENDED or AI_NOT_RECOMMENDED
-    const nextStatus: CandidateStatus = evaluation.recommendation === 'C' ? 'AI_NOT_RECOMMENDED' : 'AI_RECOMMENDED';
-    db.updateCandidateStatus(candidateId, nextStatus, 'ai_system', `AI完成初筛评估，评分: ${evaluation.overallScore}分, 综合等级: ${evaluation.recommendation}`);
+    // AI results are advisory only. Every completed interview enters the same
+    // human-review queue, regardless of score or grade.
+    db.updateCandidateStatus(
+      candidateId,
+      'AI_COMPLETED',
+      'ai_system',
+      `AI初筛已完成，评分: ${evaluation.overallScore}分，等级: ${evaluation.recommendation}；等待人工审核`,
+    );
 
     return {
       interview,

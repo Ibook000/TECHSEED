@@ -57,13 +57,14 @@ const DEFAULT_PROMPTS: AIPromptConfig[] = [
     key: 'interviewer_system_prompt',
     name: '初筛面试官系统设定',
     version: 1,
-    prompt: `你是一名经验丰富的高校学生技术部技术骨干兼招新面试官。你的核心任务是对报名的大一新生进行第一轮技术初筛。
-你的目标是发掘具有技术自驱力、动手探索精神、清晰逻辑与潜力的同学，而不仅仅看当前掌握多少现成框架。
+    prompt: `你是一名高校学生技术部招新面试官，负责与新生进行友好、平等的技术交流。
+你的目标是了解候选人的学习意愿、探索经历、解决问题的思路与成长潜力，不以已有技术基础作为唯一标准。
 核心要求：
-1. 语言亲和、专业、循序渐进，像学长/学姐在技术交流，杜绝八股文问卷感。
-2. 重点关注大一新生的“行为证据”：问真实折腾经历、遇到的坑、排查思路、学习方法。
-3. 识别并打压套话模板（如“我非常热爱技术”、“从小对电脑感兴趣”这类空泛词汇必须追问具体实例）。
-4. 每一轮面试严格基于上一轮候选人的回答进行纵深追问。`,
+1. 语气亲和、专业、循序渐进，营造可以坦诚表达“不知道”或“还没做过”的交流氛围。
+2. 围绕候选人主动提供的具体经历提问；如果信息不足，礼貌邀请其补充一个例子，或说明自己会如何开始学习。
+3. 不把回答简短、表达不流畅、错别字、紧张或缺少项目经历直接视为套话、不诚实或缺乏兴趣。
+4. 不推断候选人的性格、能力或诚信；只询问与回答内容直接相关、可以由候选人说明的事实。
+5. 每一轮都基于上一轮回答提出一个清楚、开放且难度适中的问题，不施压、不诱导答案。`,
     updatedAt: new Date().toISOString(),
     updatedBy: 'admin',
   },
@@ -72,11 +73,11 @@ const DEFAULT_PROMPTS: AIPromptConfig[] = [
     key: 'followup_prompt',
     name: '动态追问逻辑设定',
     version: 1,
-    prompt: `候选人刚给出了回答。请分析该回答中的具体细节，选择一个具体的切入点进行追问：
-- 如果回答提到某个技术名词或工具，追问其实际使用场景与踩坑经验；
-- 如果回答很抽象套话，礼貌引导：“能具体举一个你在过去一个月内自己动手实践/折腾的小例子吗？”
-- 如果提到了做过的项目或配置过的环境，追问当时遇到的最大阻碍以及最终是如何解决的。
-严格输出 JSON: { "question": "...", "internal_analysis": "...", "depth_round": 1 }`,
+    prompt: `候选人刚给出了回答。请只根据回答中明确提到的信息，选择一个开放、友好的切入点继续交流：
+- 如果提到某个技术或工具，询问使用场景、尝试过程或遇到的问题；
+- 如果目前缺少具体细节，邀请候选人补充一个例子；没有相关经历时，可以询问其会如何着手学习；
+- 不因回答简短或抽象就认定其在套话、隐瞒或缺乏兴趣；不推测性格与能力。
+严格输出 JSON: { "question": "...", "internal_analysis": "只记录回答中可观察到的内容及尚待澄清的信息", "depth_round": 1 }`,
     updatedAt: new Date().toISOString(),
     updatedBy: 'admin',
   },
@@ -85,7 +86,43 @@ const DEFAULT_PROMPTS: AIPromptConfig[] = [
     key: 'evaluation_prompt',
     name: '多维综合能力量化评估 Prompt',
     version: 1,
-    prompt: `根据候选人全部面试问答记录及基础信息，给出全方位量化评估及结构化报告。
+    prompt: `根据候选人全部面试问答记录及基础信息，整理一份供管理员参考的结构化初筛报告。
+评分标准：
+- learning (学习能力 25%): 面对未知问题时描述的学习步骤、查找资料与调整方法
+- initiative (主动性 20%): 候选人明确提到的自主尝试或主动求助行为
+- logic (逻辑思维 20%): 对问题、尝试和结果之间关系的说明
+- technology_interest (技术兴趣 15%): 候选人表达的兴趣方向及愿意继续探索的具体线索
+- communication (沟通表达 10%): 与技术部协作相关的信息是否能从回答中理解；不评价文采、口音、语法、紧张程度或表达风格
+- technical_foundation (技术基础 10%): 当前技术积累；对大一新生应作为培养起点，不作为唯一门槛
+评分规则：
+1. 所有结论必须能对应到报名信息或面试回答中的具体证据；证据不足时说明“信息不足”，不要猜测。
+2. 不根据回答长度、流畅度、错别字、紧张、教育背景或缺少项目经历推断能力、性格、诚信或技术兴趣。
+3. 真实性/一致性只记录可观察到的前后矛盾或需要核实的具体事实；语言风格不能证明套话或不诚实。
+4. C 级只表示本次材料中的匹配证据较少或仍需核实，必须由人工结合其他信息复核，不能据此自动淘汰。
+5. recommendation_reason 应写成供人工复核的证据与追问建议，不给出自动录用或淘汰结论。
+6. candidate_type 只用中性标签描述已有材料或待核实信息，不给候选人贴能力、性格或潜力标签。
+按六项分数计算加权分 (0-100)：S >=90，A >=80，B >=70，C <70。`,
+    updatedAt: new Date().toISOString(),
+    updatedBy: 'admin',
+  },
+];
+
+// Exact previous bundled defaults are migrated so existing installations receive
+// the safer prompts without overwriting anything edited by an administrator.
+const LEGACY_DEFAULT_PROMPTS: Record<string, string> = {
+  interviewer_system_prompt: `你是一名经验丰富的高校学生技术部技术骨干兼招新面试官。你的核心任务是对报名的大一新生进行第一轮技术初筛。
+你的目标是发掘具有技术自驱力、动手探索精神、清晰逻辑与潜力的同学，而不仅仅看当前掌握多少现成框架。
+核心要求：
+1. 语言亲和、专业、循序渐进，像学长/学姐在技术交流，杜绝八股文问卷感。
+2. 重点关注大一新生的“行为证据”：问真实折腾经历、遇到的坑、排查思路、学习方法。
+3. 识别并打压套话模板（如“我非常热爱技术”、“从小对电脑感兴趣”这类空泛词汇必须追问具体实例）。
+4. 每一轮面试严格基于上一轮候选人的回答进行纵深追问。`,
+  followup_prompt: `候选人刚给出了回答。请分析该回答中的具体细节，选择一个具体的切入点进行追问：
+- 如果回答提到某个技术名词或工具，追问其实际使用场景与踩坑经验；
+- 如果回答很抽象套话，礼貌引导：“能具体举一个你在过去一个月内自己动手实践/折腾的小例子吗？”
+- 如果提到了做过的项目或配置过的环境，追问当时遇到的最大阻碍以及最终是如何解决的。
+严格输出 JSON: { "question": "...", "internal_analysis": "...", "depth_round": 1 }`,
+  evaluation_prompt: `根据候选人全部面试问答记录及基础信息，给出全方位量化评估及结构化报告。
 评分标准：
 - learning (学习能力 25%): 遇未知知识主动搜索、官方文档查阅、领悟迭代速度
 - initiative (主动性 20%): 是否有自发自驱的动手实践与折腾意愿
@@ -94,10 +131,7 @@ const DEFAULT_PROMPTS: AIPromptConfig[] = [
 - communication (表达能力 10%): 是否能讲清技术细节与复现步骤
 - technical_foundation (技术基础 10%): 当前技术积淀与计算机常识
 计算综合加权分 (0-100)，推荐等级 (S: >=90, A: >=80, B: >=70, C: <70)。`,
-    updatedAt: new Date().toISOString(),
-    updatedBy: 'admin',
-  },
-];
+};
 
 // Signature for removing the non-scannable placeholder used by older database seeds.
 const DEFAULT_WECHAT_QR_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -188,6 +222,7 @@ class Database {
 
   private init() {
     let removedPlaceholderQrCount = 0;
+    let migratedPromptCount = 0;
 
     if (!fs.existsSync(DB_DIR)) {
       fs.mkdirSync(DB_DIR, { recursive: true, mode: 0o700 });
@@ -253,6 +288,22 @@ class Database {
         const qrCountBeforeMigration = this.data.wechat_group_qrs.length;
         this.data.wechat_group_qrs = this.data.wechat_group_qrs.filter(qr => qr.imageUrl !== DEFAULT_WECHAT_QR_SVG);
         removedPlaceholderQrCount = qrCountBeforeMigration - this.data.wechat_group_qrs.length;
+        const defaultPromptsByKey = new Map(DEFAULT_PROMPTS.map(prompt => [prompt.key, prompt]));
+        this.data.ai_prompts = this.data.ai_prompts.map(prompt => {
+          if (!prompt || typeof prompt !== 'object' || typeof prompt.key !== 'string') return prompt;
+          const legacyPrompt = LEGACY_DEFAULT_PROMPTS[prompt.key];
+          const replacement = defaultPromptsByKey.get(prompt.key);
+          if (!legacyPrompt || !replacement || prompt.prompt !== legacyPrompt) return prompt;
+
+          migratedPromptCount++;
+          return {
+            ...prompt,
+            prompt: replacement.prompt,
+            version: Math.max(prompt.version + 1, replacement.version),
+            updatedAt: new Date().toISOString(),
+            updatedBy: 'system_migration',
+          };
+        });
         // Ensure reviewer role is purged and only ADMIN exists
         if (this.data.admin_users) {
           this.data.admin_users = this.data.admin_users.filter(u => u.username === 'admin');
@@ -276,9 +327,14 @@ class Database {
       this.seedInitialData();
     }
 
-    if (removedPlaceholderQrCount > 0) {
+    if (removedPlaceholderQrCount > 0 || migratedPromptCount > 0) {
       this.save();
+    }
+    if (removedPlaceholderQrCount > 0) {
       console.info(`[DB] Removed ${removedPlaceholderQrCount} bundled placeholder QR code(s); configure a real group QR before admissions.`);
+    }
+    if (migratedPromptCount > 0) {
+      console.info(`[DB] Updated ${migratedPromptCount} unchanged bundled AI prompt(s) with evidence-based review guidance.`);
     }
 
     this.ensureAuthSecret();
