@@ -11,6 +11,16 @@ interface AIInterviewTerminalProps {
   isLoading: boolean;
 }
 
+function createSubmissionId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  // randomUUID is unavailable on some browsers when the app is opened over plain HTTP.
+  // This identifier is only for retry deduplication; it is not an authentication token.
+  return `submission-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
 export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
   candidate,
   interview,
@@ -40,7 +50,7 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
     const existingSubmission = pendingSubmission.current;
     const submissionId = existingSubmission?.answer === text
       ? existingSubmission.id
-      : crypto.randomUUID();
+      : createSubmissionId();
     pendingSubmission.current = { answer: text, id: submissionId };
     try {
       await onSubmitAnswer(text, submissionId);
@@ -111,7 +121,7 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
                 <div className="flex items-center gap-2 text-amber-700 font-bold uppercase tracking-wider text-[11px]">
                   <span>学生会技术部 AI 初筛交互核心已连接</span>
                   <span className="text-amber-300">|</span>
-                  <span className="text-amber-600 text-[10px]">信电学生会技术部</span>
+                  <span className="text-amber-600 text-[10px]">xxxxx学院学生会技术部</span>
                 </div>
                 <p className="font-sans text-xs text-zinc-600">
                   请放松心态，把这次初筛当成与技术部学长学姐的技术漫谈。系统会围绕你的自述和技术方向展开追问，没有标准答案，关注你的自学实践与排查思路。
