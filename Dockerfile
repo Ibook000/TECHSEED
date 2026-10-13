@@ -19,6 +19,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/scripts/backup-db.mjs ./scripts/backup-db.mjs
 RUN mkdir -p /app/data && chown node:node /app/data
 
 USER node
