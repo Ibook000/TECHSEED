@@ -280,6 +280,37 @@ function readStringList(value: unknown, fallback: string[]): string[] {
   return items.length > 0 ? items : fallback;
 }
 
+function redactKnownProfileIdentifiers(text: string, profile: CandidateProfile): string {
+  const identifiers = new Set<string>();
+  const profileValues = [
+    profile.name,
+    profile.studentId,
+    profile.major,
+    profile.className,
+    profile.phone,
+    profile.wechat,
+  ];
+
+  for (const value of profileValues) {
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (!trimmed || Array.from(trimmed).length < 2) continue;
+    identifiers.add(trimmed);
+
+    const compact = trimmed.replace(/[\s()+.\-]/g, '');
+    if (Array.from(compact).length >= 2) identifiers.add(compact);
+  }
+
+  return [...identifiers]
+    .sort((left, right) => right.length - left.length)
+    .reduce((redacted, identifier) => {
+      const pattern = Array.from(identifier)
+        .map(char => char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('[\\s()+.\\-]*');
+      return redacted.replace(new RegExp(pattern, 'giu'), '[已隐藏]');
+    }, text);
+}
+
 interface OpenAIChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -546,9 +577,9 @@ export class AIService {
     const userPrompt = `候选人基本信息：
 - 技术基础: ${profile.technicalFoundation}
 - 期望方向: ${profile.techDirection}
-- 个人自我介绍: "${profile.selfIntro}"
+- 个人自我介绍: "${redactKnownProfileIdentifiers(profile.selfIntro, profile)}"
 
-以上信息已去除姓名、学号、班级与联系方式。请根据技术基础、方向和自我介绍，提出第一个破冰/初筛提问；不要询问或输出个人身份信息。
+系统已对自由文本中可匹配的已知身份信息做脱敏处理。请根据技术基础、方向和自我介绍提出第一个破冰/初筛提问；不要询问或输出个人身份信息。
 要求：
 1. 语言亲切、专业、像师兄师姐交流，避免僵硬的高考式提问；
 2. 针对他自我介绍中提到的细节或他对${profile.techDirection}方向的兴趣出发；
@@ -589,16 +620,16 @@ export class AIService {
     const followupPrompt = promptConfig?.prompt || '请基于候选人最新回答，深入追问细节或行为证据。';
 
     const conversationHistory = history
-      .map(m => `${m.sender === 'ai' ? '面试官' : '候选人'}: ${m.content}`)
+      .map(m => `${m.sender === 'ai' ? '面试官' : '候选人'}: ${redactKnownProfileIdentifiers(m.content, profile)}`)
       .join('\n');
 
     const userPrompt = `${followupPrompt}
 
 【候选人信息】
 技术基础: ${profile.technicalFoundation}, 方向: ${profile.techDirection}
-自我介绍: ${profile.selfIntro}
+自我介绍: ${redactKnownProfileIdentifiers(profile.selfIntro, profile)}
 
-以上信息已去除姓名、学号、专业、班级与联系方式。不要询问或输出个人身份信息。
+系统已对自由文本中可匹配的已知身份信息做脱敏处理。不要询问或输出个人身份信息。
 
 【当前面试轮次】: 第 ${currentRound} 轮 (共 4-5 轮)
 ${isLastRound ? '注意：这是面试的最后一轮提问，可以询问学习规划、希望参与的方向或请候选人补充想分享的信息。' : '注意：请针对候选人明确提到的经历或想法进行友好追问；如果信息不足，邀请补充或说明还没有相关经历。不要推断套话或真实性。'}
@@ -665,7 +696,7 @@ ${conversationHistory}
     messages: InterviewMessage[]
   ): Promise<AIEvaluation> {
     const candidateConversation = messages
-      .map(m => `${m.sender === 'ai' ? '面试官' : '候选人'}: ${m.content}`)
+      .map(m => `${m.sender === 'ai' ? '面试官' : '候选人'}: ${redactKnownProfileIdentifiers(m.content, profile)}`)
       .join('\n\n');
 
     const promptConfig = db.getPrompts().find(p => p.key === 'evaluation_prompt');
@@ -676,9 +707,9 @@ ${conversationHistory}
 【候选人信息】
 技术基础: ${profile.technicalFoundation}
 技术方向兴趣: ${profile.techDirection}
-个人介绍: ${profile.selfIntro}
+个人介绍: ${redactKnownProfileIdentifiers(profile.selfIntro, profile)}
 
-系统已去除姓名、学号、专业、班级与联系方式。不得猜测或要求个人身份信息。
+系统已对自由文本中可匹配的已知身份信息做脱敏处理。不得猜测或要求个人身份信息。
 
 【完整面试记录】
 ${candidateConversation}
