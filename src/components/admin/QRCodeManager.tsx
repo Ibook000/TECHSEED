@@ -9,6 +9,17 @@ import {
 } from 'lucide-react';
 import { WeChatGroupQR, RecruitmentBatch } from '../../types.js';
 
+function toDateTimeLocal(value?: string): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+function currentDateTimeLocal(): string {
+  return toDateTimeLocal(new Date().toISOString());
+}
+
 interface QRCodeManagerProps {
   batches?: RecruitmentBatch[];
   activeBatchId?: string;
@@ -22,6 +33,7 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
   const [currentQR, setCurrentQR] = useState<WeChatGroupQR | null>(null);
   const [title, setTitle] = useState('技术部招新官方微信群');
   const [imageUrl, setImageUrl] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -35,9 +47,11 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
         if (data) {
           setTitle(data.title);
           setImageUrl(data.imageUrl);
+          setExpiresAt(toDateTimeLocal(data.expiresAt));
         } else {
           setTitle('技术部招新官方微信群');
           setImageUrl('');
+          setExpiresAt('');
         }
       }
     } catch (err) {
@@ -70,6 +84,10 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
       setMsg({ text: '请上传或填入微信群二维码图片', type: 'error' });
       return;
     }
+    if (expiresAt && (!Number.isFinite(new Date(expiresAt).getTime()) || new Date(expiresAt).getTime() <= Date.now())) {
+      setMsg({ text: '有效期必须设置为未来时间', type: 'error' });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -81,6 +99,7 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
           batchId: selectedBatchId,
           title: title.trim(),
           imageUrl: imageUrl.trim(),
+          expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
         }),
       });
 
@@ -108,6 +127,7 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
       if (res.ok) {
         setCurrentQR(null);
         setImageUrl('');
+        setExpiresAt('');
         setMsg({ text: '微信群二维码已成功移除', type: 'success' });
         await fetchQR();
       }
@@ -194,6 +214,21 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
                 placeholder="https://... 或 data:image/..."
                 className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2 text-xs font-mono text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:outline-none shadow-xs"
               />
+            </div>
+
+            <div>
+              <label htmlFor="wechat-qr-expires-at" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
+                二维码有效期至（可选）
+              </label>
+              <input
+                id="wechat-qr-expires-at"
+                type="datetime-local"
+                min={currentDateTimeLocal()}
+                value={expiresAt}
+                onChange={event => setExpiresAt(event.target.value)}
+                className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2 text-xs font-mono text-zinc-900 focus:border-amber-400 focus:outline-none shadow-xs"
+              />
+              <p className="mt-1 text-[10px] text-zinc-500">到期后学生端会自动隐藏该二维码；留空表示持续有效。</p>
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-zinc-100">

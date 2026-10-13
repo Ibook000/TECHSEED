@@ -311,7 +311,7 @@ export class RecruitmentService {
       authorized: true,
       status: candidate.status,
       qr: qr || null,
-      message: qr ? '请扫码入群' : '当前尚未配置微信群二维码，请联系技术部管理员',
+      message: qr ? '请扫码入群' : '当前批次二维码尚未配置或已过期，请联系技术部管理员',
     };
   }
 

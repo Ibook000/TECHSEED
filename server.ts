@@ -785,7 +785,16 @@ app.get('/api/wechat-qr', (req: Request, res: Response) => {
 app.post('/api/wechat-qr', (req: Request, res: Response) => {
   const { batchId, imageUrl, title, expiresAt, id } = req.body;
   if (!imageUrl) return res.status(400).json({ error: '二维码图片不可为空' });
-  const targetBatch = batchId ? String(batchId) : (db.getActiveBatch()?.id || 'batch-2026');
+  let normalizedExpiresAt: string | undefined;
+  if (expiresAt !== undefined && expiresAt !== null && expiresAt !== '') {
+    if (typeof expiresAt !== 'string') return res.status(400).json({ error: '二维码有效期格式无效' });
+    const expiryTimestamp = Date.parse(expiresAt);
+    if (!Number.isFinite(expiryTimestamp) || expiryTimestamp <= Date.now()) {
+      return res.status(400).json({ error: '二维码有效期必须是未来时间' });
+    }
+    normalizedExpiresAt = new Date(expiryTimestamp).toISOString();
+  }
+  const targetBatch = batchId ? String(batchId) : (db.getActiveBatch()?.id || `batch-${new Date().getFullYear()}`);
 
   const qr = db.saveWeChatQR({
     id: id || `qr-${targetBatch}`,
@@ -793,7 +802,7 @@ app.post('/api/wechat-qr', (req: Request, res: Response) => {
     imageUrl,
     title: title || '技术部招新官方微信群',
     status: 'ACTIVE',
-    expiresAt,
+    expiresAt: normalizedExpiresAt,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });

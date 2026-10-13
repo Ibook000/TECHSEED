@@ -75,6 +75,30 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
     }
   }, [candidate.id, status, isAdmitted]);
 
+  useEffect(() => {
+    const expiresAt = qrData?.qr?.expiresAt;
+    if (!expiresAt) return;
+
+    const expiryTimestamp = Date.parse(expiresAt);
+    if (!Number.isFinite(expiryTimestamp)) {
+      setQrData(current => current ? { ...current, qr: null, message: '群二维码有效期无效，请联系技术部管理员' } : current);
+      return;
+    }
+
+    let timeoutId: number;
+    const hideExpiredQr = () => {
+      const remainingMs = expiryTimestamp - Date.now();
+      if (remainingMs <= 0) {
+        setQrData(current => current ? { ...current, qr: null, message: '群二维码已过期，请联系技术部管理员' } : current);
+        return;
+      }
+      timeoutId = window.setTimeout(hideExpiredQr, Math.min(remainingMs, 2_147_000_000));
+    };
+
+    hideExpiredQr();
+    return () => window.clearTimeout(timeoutId);
+  }, [qrData?.qr?.expiresAt]);
+
   const handleConfirmJoin = async () => {
     setConfirmingJoin(true);
     setJoinError(null);
@@ -304,7 +328,7 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
                 <div className="h-56 w-56 flex flex-col items-center justify-center rounded-[14px] border border-zinc-200 bg-zinc-50 p-4 text-center">
                   <QrCode className="h-10 w-10 text-zinc-300 mb-2" />
                   <span className="text-zinc-500 text-xs leading-relaxed">
-                    群二维码正在配置中，请联系技术部学长学姐
+                    群二维码尚未配置或已过期，请联系技术部管理员
                   </span>
                 </div>
               )}

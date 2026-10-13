@@ -662,11 +662,19 @@ class Database {
 
   // WeChat QR Management
   public getWeChatQR(batchId?: string): WeChatGroupQR | undefined {
+    const now = Date.now();
+    const isUsable = (qr: WeChatGroupQR) => {
+      if (qr.status !== 'ACTIVE') return false;
+      if (!qr.expiresAt) return true;
+      const expiresAt = Date.parse(qr.expiresAt);
+      return Number.isFinite(expiresAt) && expiresAt > now;
+    };
+
     if (batchId) {
-      const batchList = this.data.wechat_group_qrs.filter(q => q.batchId === batchId && q.status === 'ACTIVE');
+      const batchList = this.data.wechat_group_qrs.filter(q => q.batchId === batchId && isUsable(q));
       return batchList.length > 0 ? batchList[batchList.length - 1] : undefined;
     }
-    const allActive = this.data.wechat_group_qrs.filter(q => q.status === 'ACTIVE');
+    const allActive = this.data.wechat_group_qrs.filter(isUsable);
     if (allActive.length > 0) return allActive[allActive.length - 1];
     return undefined;
   }
