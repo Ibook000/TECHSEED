@@ -6,6 +6,40 @@ export const ADMIN_USER_KEY = 'tech_admin_user';
 export const STUDENT_TOKEN_KEY = 'tech_student_access_token';
 export const STUDENT_CANDIDATE_ID_KEY = 'tech_student_candidate_id';
 
+const memoryStoredValues = new Map<string, string>();
+
+export function getStoredValue(key: string): string | null {
+  try {
+    const storedValue = typeof window === 'undefined' ? null : window.localStorage.getItem(key);
+    if (storedValue !== null) {
+      memoryStoredValues.set(key, storedValue);
+      return storedValue;
+    }
+    memoryStoredValues.delete(key);
+    return null;
+  } catch {
+    return memoryStoredValues.get(key) ?? null;
+  }
+}
+
+export function setStoredValue(key: string, value: string): void {
+  memoryStoredValues.set(key, value);
+  try {
+    if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+  } catch {
+    // The current tab can keep working with the in-memory value until it closes.
+  }
+}
+
+export function removeStoredValue(key: string): void {
+  memoryStoredValues.delete(key);
+  try {
+    if (typeof window !== 'undefined') window.localStorage.removeItem(key);
+  } catch {
+    // The current tab no longer uses the removed in-memory value.
+  }
+}
+
 export function getAdminToken(): string {
   try {
     return sessionStorage.getItem(ADMIN_TOKEN_KEY) || '';
@@ -32,29 +66,17 @@ export function clearAdminSession(): void {
 }
 
 export function getStudentAccessToken(): string {
-  try {
-    return localStorage.getItem(STUDENT_TOKEN_KEY) || '';
-  } catch {
-    return '';
-  }
+  return getStoredValue(STUDENT_TOKEN_KEY) || '';
 }
 
 export function saveStudentSession(candidateId: string, token: string): void {
-  try {
-    localStorage.setItem(STUDENT_CANDIDATE_ID_KEY, candidateId);
-    localStorage.setItem(STUDENT_TOKEN_KEY, token);
-  } catch {
-    // The current in-memory session still works if storage is unavailable.
-  }
+  setStoredValue(STUDENT_CANDIDATE_ID_KEY, candidateId);
+  setStoredValue(STUDENT_TOKEN_KEY, token);
 }
 
 export function clearStudentSession(): void {
-  try {
-    localStorage.removeItem(STUDENT_CANDIDATE_ID_KEY);
-    localStorage.removeItem(STUDENT_TOKEN_KEY);
-  } catch {
-    // ignore
-  }
+  removeStoredValue(STUDENT_CANDIDATE_ID_KEY);
+  removeStoredValue(STUDENT_TOKEN_KEY);
 }
 
 function requestUrl(input: RequestInfo | URL): string {

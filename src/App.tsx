@@ -22,7 +22,10 @@ import {
   getStudentAccessToken,
   clearAdminSession,
   clearStudentSession,
+  getStoredValue,
+  removeStoredValue,
   saveStudentSession,
+  setStoredValue,
   STUDENT_CANDIDATE_ID_KEY,
 } from './lib/auth.js';
 import {
@@ -143,16 +146,10 @@ export default function App() {
 
   // Remember most recently used student ID & name for quick status query and session continuity
   const [recentStudentId, setRecentStudentId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('tech_last_student_id') || '';
-    }
-    return '';
+    return getStoredValue('tech_last_student_id') || '';
   });
   const [recentCandidateName, setRecentCandidateName] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('tech_last_candidate_name') || '';
-    }
-    return '';
+    return getStoredValue('tech_last_candidate_name') || '';
   });
 
   // Batches & Candidates Data (Admin Portal)
@@ -251,18 +248,14 @@ export default function App() {
       const sName = candidateSession.profile.name || '';
       setRecentStudentId(sId);
       setRecentCandidateName(sName);
-      try {
-        localStorage.setItem('tech_last_student_id', sId);
-        if (sName) {
-          localStorage.setItem('tech_last_candidate_name', sName);
-        }
-      } catch (e) {}
+      setStoredValue('tech_last_student_id', sId);
+      if (sName) setStoredValue('tech_last_candidate_name', sName);
     }
   }, [candidateSession]);
 
   // Auto-restore candidate session from localStorage if available on launch
   useEffect(() => {
-    const savedCandidateId = typeof window !== 'undefined' ? localStorage.getItem(STUDENT_CANDIDATE_ID_KEY) : null;
+    const savedCandidateId = getStoredValue(STUDENT_CANDIDATE_ID_KEY);
     const savedStudentToken = getStudentAccessToken();
     if (savedCandidateId && savedStudentToken && !candidateSession) {
       fetch(`/api/candidates/${encodeURIComponent(savedCandidateId)}`)
@@ -307,10 +300,8 @@ export default function App() {
     setCandidateSession(candidate);
     setRecentStudentId(candidate.profile.studentId);
     setRecentCandidateName(candidate.profile.name);
-    try {
-      localStorage.setItem('tech_last_student_id', candidate.profile.studentId);
-      localStorage.setItem('tech_last_candidate_name', candidate.profile.name);
-    } catch (e) {}
+    setStoredValue('tech_last_student_id', candidate.profile.studentId);
+    setStoredValue('tech_last_candidate_name', candidate.profile.name);
 
     // Automatically trigger or resume AI interview
     const intvRes = await fetch('/api/interviews', {
@@ -453,10 +444,8 @@ export default function App() {
         setStudentScreen('home');
         setRecentStudentId(null);
         setRecentCandidateName(null);
-        try {
-          localStorage.removeItem('tech_last_student_id');
-          localStorage.removeItem('tech_last_candidate_name');
-        } catch (e) {}
+        removeStoredValue('tech_last_student_id');
+        removeStoredValue('tech_last_candidate_name');
         clearStudentSession();
       }
       await loadCandidatesAndStats(activeBatchId);
@@ -493,10 +482,8 @@ export default function App() {
             setStudentScreen('home');
             setRecentStudentId(null);
             setRecentCandidateName(null);
-            try {
-              localStorage.removeItem('tech_last_student_id');
-              localStorage.removeItem('tech_last_candidate_name');
-            } catch (e) {}
+            removeStoredValue('tech_last_student_id');
+            removeStoredValue('tech_last_candidate_name');
             clearStudentSession();
           }}
           onOpenRegistration={() => setIsRegistrationOpen(true)}
@@ -743,10 +730,8 @@ export default function App() {
           setActiveInterview(intv);
           setRecentStudentId(cand.profile.studentId);
           setRecentCandidateName(cand.profile.name);
-          try {
-            localStorage.setItem('tech_last_student_id', cand.profile.studentId);
-            localStorage.setItem('tech_last_candidate_name', cand.profile.name);
-          } catch (e) {}
+          setStoredValue('tech_last_student_id', cand.profile.studentId);
+          setStoredValue('tech_last_candidate_name', cand.profile.name);
           if (intv && intv.status !== 'COMPLETED') {
             setStudentScreen('interview');
           } else {

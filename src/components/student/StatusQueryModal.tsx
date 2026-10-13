@@ -4,7 +4,9 @@ import { Candidate, InterviewSession } from '../../types.js';
 import {
   clearStudentSession,
   getStudentAccessToken,
+  getStoredValue,
   saveStudentSession,
+  setStoredValue,
   STUDENT_CANDIDATE_ID_KEY,
 } from '../../lib/auth.js';
 
@@ -33,8 +35,8 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    const storedId = typeof window !== 'undefined' ? localStorage.getItem('tech_last_student_id') || '' : '';
-    const storedName = typeof window !== 'undefined' ? localStorage.getItem('tech_last_candidate_name') || '' : '';
+    const storedId = getStoredValue('tech_last_student_id') || '';
+    const storedName = getStoredValue('tech_last_candidate_name') || '';
     const effectiveId = (defaultStudentId || storedId).trim();
     const effectiveName = (defaultCandidateName || storedName).trim();
     setStudentId(effectiveId);
@@ -54,8 +56,8 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const storedCandidateId = localStorage.getItem(STUDENT_CANDIDATE_ID_KEY) || '';
-      const storedStudentId = localStorage.getItem('tech_last_student_id') || '';
+      const storedCandidateId = getStoredValue(STUDENT_CANDIDATE_ID_KEY) || '';
+      const storedStudentId = getStoredValue('tech_last_student_id') || '';
       const hasMatchingSession = Boolean(
         getStudentAccessToken() && storedCandidateId && cleanId === storedStudentId.trim(),
       );
@@ -89,8 +91,8 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
       }
 
       saveStudentSession(data.candidate.id, data.studentToken);
-      localStorage.setItem('tech_last_student_id', data.candidate.profile.studentId);
-      localStorage.setItem('tech_last_candidate_name', data.candidate.profile.name);
+      setStoredValue('tech_last_student_id', data.candidate.profile.studentId);
+      setStoredValue('tech_last_candidate_name', data.candidate.profile.name);
       onCandidateFound(data.candidate, data.interview || null);
       onClose();
     } catch (err: any) {
@@ -108,8 +110,8 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
   const hasSavedSession = Boolean(
     typeof window !== 'undefined' &&
     getStudentAccessToken() &&
-    localStorage.getItem(STUDENT_CANDIDATE_ID_KEY) &&
-    localStorage.getItem('tech_last_student_id') === studentId.trim(),
+    getStoredValue(STUDENT_CANDIDATE_ID_KEY) &&
+    getStoredValue('tech_last_student_id') === studentId.trim(),
   );
 
   return (
