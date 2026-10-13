@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 import 'dotenv/config';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
-import { createServer as createViteServer } from 'vite';
 import { db } from './server/db/index.js';
 import { RecruitmentService } from './server/services/recruitment.js';
 import { HttpError } from './server/errors.js';
@@ -1029,6 +1028,8 @@ function csvCell(value: unknown): string {
 // --- Vite Middleware Integration ---
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    // Keep the development-only toolchain out of production containers.
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

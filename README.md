@@ -74,7 +74,7 @@ npm run dev
 ```bash
 npm run dev     # 开发模式（tsx server.ts，端口 3000）
 npm run build   # 构建产物：vite build + esbuild 打包 server.ts -> dist/server.cjs
-npm run start   # 运行构建产物 node dist/server.cjs
+npm run start   # 以 production 模式运行构建产物（先执行 npm run build）
 npm run lint    # TypeScript 类型检查（tsc --noEmit）
 npm run audit   # 检查已知依赖漏洞（npm audit）
 npm run clean   # 清理构建产物
