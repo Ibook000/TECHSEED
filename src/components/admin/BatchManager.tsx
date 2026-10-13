@@ -102,6 +102,9 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
         <Plus className="h-3.5 w-3.5" />
         新建批次
       </button>
+      <p className="w-full text-[11px] text-zinc-500">
+        启用后，新报名会进入所选批次；已报名记录仍保留在原批次。
+      </p>
 
       {error && !isCreateOpen && (
         <p role="alert" className="w-full text-xs text-rose-700">{error}</p>
