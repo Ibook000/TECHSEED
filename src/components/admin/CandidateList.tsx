@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Search,
   Download,
@@ -8,6 +8,7 @@ import {
   ArrowDown,
   RotateCcw,
   Users,
+  ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 import { Candidate, AIRecommendationGrade, TechDirection, CandidateStatus } from '../../types.js';
@@ -90,6 +91,8 @@ const GRADE_RANK: Record<string, number> = {
   'C': 1,
 };
 
+const PAGE_SIZE = 25;
+
 export const CandidateList: React.FC<CandidateListProps> = ({
   candidates,
   onSelectCandidate,
@@ -105,6 +108,7 @@ export const CandidateList: React.FC<CandidateListProps> = ({
   const [sortField, setSortField] = useState<SortField>('score');
   const [sortOrder, setSortOrder] = useState<SortDirection>('desc');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [page, setPage] = useState(1);
 
   // Free table header sort toggle
   const handleSort = (field: SortField) => {
@@ -252,6 +256,21 @@ export const CandidateList: React.FC<CandidateListProps> = ({
 
     return sortOrder === 'desc' ? -cmp : cmp;
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, directionFilter, gradeFilter, minScore, selectedPreset, sortField, sortOrder]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredCandidates.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const firstRowIndex = (currentPage - 1) * PAGE_SIZE;
+  const pageCandidates = filteredCandidates.slice(firstRowIndex, firstRowIndex + PAGE_SIZE);
+  const firstVisibleRow = filteredCandidates.length === 0 ? 0 : firstRowIndex + 1;
+  const lastVisibleRow = Math.min(firstRowIndex + PAGE_SIZE, filteredCandidates.length);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   const handleExportCSV = async () => {
     // Fetch rather than navigate: a window.location.href download would have to
@@ -506,7 +525,7 @@ export const CandidateList: React.FC<CandidateListProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredCandidates.map(c => {
+                pageCandidates.map(c => {
                   const statusInfo = STATUS_TEXT[c.status] || { label: c.status, color: 'text-zinc-400' };
                   const formattedDate = c.registeredAt
                     ? new Date(c.registeredAt).toLocaleDateString('zh-CN', {
@@ -623,11 +642,44 @@ export const CandidateList: React.FC<CandidateListProps> = ({
         </div>
 
         {/* Table Footer */}
-        <div className="border-t border-zinc-200 bg-zinc-50 px-4 py-2.5 flex items-center justify-between font-mono text-xs text-zinc-500">
-          <span>共计 {filteredCandidates.length} 名候选人档案</span>
-          <span className="text-[10px] uppercase tracking-wider">
-            点击任意表头列自由切换升序 / 降序
+        <div className="border-t border-zinc-200 bg-zinc-50 px-4 py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between font-mono text-xs text-zinc-500">
+          <span>
+            {filteredCandidates.length === 0
+              ? '共 0 名候选人档案'
+              : `显示 ${firstVisibleRow}–${lastVisibleRow} 条，共 ${filteredCandidates.length} 名候选人档案`}
           </span>
+          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+            <span className="text-[10px] uppercase tracking-wider">
+              点击任意表头列自由切换升序 / 降序
+            </span>
+            {pageCount > 1 && (
+              <nav aria-label="候选人列表分页" className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  aria-label="上一页候选人"
+                  className="inline-flex h-7 items-center gap-1 rounded border border-zinc-200 bg-white px-2 text-zinc-700 transition-colors hover:border-amber-300 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span>上一页</span>
+                </button>
+                <span aria-live="polite" className="min-w-[4.5rem] text-center text-[10px] text-zinc-500">
+                  {currentPage} / {pageCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage(currentPage + 1)}
+                  disabled={currentPage === pageCount}
+                  aria-label="下一页候选人"
+                  className="inline-flex h-7 items-center gap-1 rounded border border-zinc-200 bg-white px-2 text-zinc-700 transition-colors hover:border-amber-300 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span>下一页</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </nav>
+            )}
+          </div>
         </div>
       </div>
     </div>
