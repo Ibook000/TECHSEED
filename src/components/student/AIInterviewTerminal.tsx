@@ -30,6 +30,7 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const pendingSubmission = useRef<{ answer: string; id: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -47,6 +48,7 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
     const text = inputText;
     setInputText('');
     setSubmitError(null);
+    setCompletionError(null);
     const existingSubmission = pendingSubmission.current;
     const submissionId = existingSubmission?.answer === text
       ? existingSubmission.id
@@ -58,6 +60,15 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
     } catch (error) {
       setInputText(current => current || text);
       setSubmitError(error instanceof Error ? error.message : '提交失败，请稍后重试');
+    }
+  };
+
+  const handleComplete = async () => {
+    setCompletionError(null);
+    try {
+      await onCompleteInterview();
+    } catch (error) {
+      setCompletionError(error instanceof Error ? error.message : '暂时无法完成初筛，请稍后重试');
     }
   };
 
@@ -236,13 +247,20 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-zinc-400 font-mono tracking-wider">
                 <span>提示：真诚具体地描述真实细节，多讲遇到的困难与排障思考</span>
                 {interview.currentRound >= 4 && (
-                  <button
-                    onClick={onCompleteInterview}
-                    disabled={isLoading}
-                    className="text-amber-600 hover:underline font-bold"
-                  >
-                    内容已充分表达？可点击提前完成初筛
-                  </button>
+                  <div className="flex flex-col items-end gap-1">
+                    {completionError && (
+                      <span role="alert" className="text-right text-rose-700">
+                        {completionError}
+                      </span>
+                    )}
+                    <button
+                      onClick={handleComplete}
+                      disabled={isLoading}
+                      className="text-amber-600 hover:underline font-bold disabled:opacity-50"
+                    >
+                      内容已充分表达？可点击提前完成初筛
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

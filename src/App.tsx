@@ -399,17 +399,19 @@ export default function App() {
       const res = await fetch(`/api/interviews/${candidateSession.id}/complete`, {
         method: 'POST',
       });
-      if (res.ok) {
-        const candRes = await fetch(`/api/candidates/${candidateSession.id}`);
-        if (candRes.ok) {
-          const candData = await candRes.json();
-          setCandidateSession(candData.candidate);
-        }
-        setStudentScreen('status');
-        loadCandidatesAndStats(activeBatchId);
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.error || '暂时无法完成初筛，请稍后重试');
       }
+      const candRes = await fetch(`/api/candidates/${candidateSession.id}`);
+      if (candRes.ok) {
+        const candData = await candRes.json();
+        setCandidateSession(candData.candidate);
+      }
+      setStudentScreen('status');
+      loadCandidatesAndStats(activeBatchId);
     } catch (err) {
-      console.error(err);
+      throw new Error(err instanceof Error ? err.message : '网络连接异常，请稍后重试');
     } finally {
       setIsInterviewLoading(false);
     }
