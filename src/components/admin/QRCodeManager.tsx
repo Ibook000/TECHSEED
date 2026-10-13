@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   QrCode,
   Upload,
@@ -20,6 +20,8 @@ function currentDateTimeLocal(): string {
   return toDateTimeLocal(new Date().toISOString());
 }
 
+const MAX_QR_IMAGE_BYTES = 1_400_000;
+
 interface QRCodeManagerProps {
   batches?: RecruitmentBatch[];
   activeBatchId?: string;
@@ -36,38 +38,63 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
   const [expiresAt, setExpiresAt] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const qrRequestId = useRef(0);
 
   const fetchQR = async () => {
+    const requestId = ++qrRequestId.current;
     setLoading(true);
     try {
       const res = await fetch(`/api/wechat-qr?batchId=${selectedBatchId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentQR(data);
-        if (data) {
-          setTitle(data.title);
-          setImageUrl(data.imageUrl);
-          setExpiresAt(toDateTimeLocal(data.expiresAt));
-        } else {
-          setTitle('技术部招新官方微信群');
-          setImageUrl('');
-          setExpiresAt('');
-        }
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.error || `读取二维码失败（${res.status}）`);
       }
+
+      const data = await res.json();
+      if (requestId !== qrRequestId.current) return;
+      setCurrentQR(data);
+      setTitle(data?.title || '技术部招新官方微信群');
+      setImageUrl(data?.imageUrl || '');
+      setExpiresAt(toDateTimeLocal(data?.expiresAt));
     } catch (err) {
+      if (requestId !== qrRequestId.current) return;
       console.error(err);
+      setCurrentQR(null);
+      setTitle('技术部招新官方微信群');
+      setImageUrl('');
+      setExpiresAt('');
+      setMsg({ text: err instanceof Error ? err.message : '读取二维码失败，请稍后重试', type: 'error' });
     } finally {
-      setLoading(false);
+      if (requestId === qrRequestId.current) setLoading(false);
     }
   };
 
   useEffect(() => {
+    setCurrentQR(null);
+    setTitle('技术部招新官方微信群');
+    setImageUrl('');
+    setExpiresAt('');
+    setMsg(null);
     fetchQR();
+    return () => {
+      qrRequestId.current += 1;
+    };
   }, [selectedBatchId]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      setMsg({ text: '请选择 PNG、JPG 或 WebP 格式的图片', type: 'error' });
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_QR_IMAGE_BYTES) {
+      setMsg({ text: '二维码图片不能超过 1.4 MB', type: 'error' });
+      e.target.value = '';
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -190,14 +217,14 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
                       <span>点击选择图片上传</span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/png,image/jpeg,image/webp"
                         onChange={handleFileUpload}
                         className="sr-only"
                       />
                     </label>
-                    <span className="pl-1">或拖拽二维码至此</span>
+                    <span className="pl-1">或选择本地文件</span>
                   </div>
-                  <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-wider">SUPPORT PNG, JPG, WEBP</p>
+                  <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-wider">PNG, JPG, WEBP · 最大 1.4 MB</p>
                 </div>
               </div>
             </div>

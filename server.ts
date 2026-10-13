@@ -783,8 +783,33 @@ app.get('/api/wechat-qr', (req: Request, res: Response) => {
 });
 
 app.post('/api/wechat-qr', (req: Request, res: Response) => {
-  const { batchId, imageUrl, title, expiresAt, id } = req.body;
-  if (!imageUrl) return res.status(400).json({ error: '二维码图片不可为空' });
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  const { batchId, imageUrl, title, expiresAt, id } = body;
+  if (typeof imageUrl !== 'string' || !imageUrl.trim()) {
+    return res.status(400).json({ error: '二维码图片不可为空' });
+  }
+  const normalizedImageUrl = imageUrl.trim();
+  if (normalizedImageUrl.length > 1_900_000) {
+    return res.status(413).json({ error: '二维码图片过大，请压缩至 1.4 MB 以内' });
+  }
+  const isSupportedImageDataUrl = /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(normalizedImageUrl);
+  if (!isSupportedImageDataUrl) {
+    if (normalizedImageUrl.length > 2048) {
+      return res.status(413).json({ error: '二维码图片链接不能超过 2048 个字符' });
+    }
+    try {
+      const url = new URL(normalizedImageUrl);
+      if (url.protocol !== 'https:' || !url.hostname) throw new Error('Unsupported QR image URL');
+    } catch {
+      return res.status(400).json({ error: '二维码需为 HTTPS 图片链接，或 PNG、JPG、WebP 图片数据' });
+    }
+  }
+  if (title !== undefined && (typeof title !== 'string' || title.trim().length > 120)) {
+    return res.status(400).json({ error: '二维码标题不能超过 120 个字符' });
+  }
+  if (batchId !== undefined && typeof batchId !== 'string') {
+    return res.status(400).json({ error: '招新批次无效' });
+  }
   let normalizedExpiresAt: string | undefined;
   if (expiresAt !== undefined && expiresAt !== null && expiresAt !== '') {
     if (typeof expiresAt !== 'string') return res.status(400).json({ error: '二维码有效期格式无效' });
@@ -794,13 +819,16 @@ app.post('/api/wechat-qr', (req: Request, res: Response) => {
     }
     normalizedExpiresAt = new Date(expiryTimestamp).toISOString();
   }
-  const targetBatch = batchId ? String(batchId) : (db.getActiveBatch()?.id || `batch-${new Date().getFullYear()}`);
+  const targetBatch = batchId || db.getActiveBatch()?.id;
+  if (!targetBatch || !db.getBatches().some(batch => batch.id === targetBatch)) {
+    return res.status(400).json({ error: '请选择一个有效招新批次' });
+  }
 
   const qr = db.saveWeChatQR({
-    id: id || `qr-${targetBatch}`,
+    id: typeof id === 'string' && id.length <= 120 ? id : `qr-${targetBatch}`,
     batchId: targetBatch,
-    imageUrl,
-    title: title || '技术部招新官方微信群',
+    imageUrl: normalizedImageUrl,
+    title: title?.trim() || '技术部招新官方微信群',
     status: 'ACTIVE',
     expiresAt: normalizedExpiresAt,
     createdAt: new Date().toISOString(),
