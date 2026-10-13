@@ -8,10 +8,16 @@ export const STUDENT_CANDIDATE_ID_KEY = 'tech_student_candidate_id';
 
 const memoryStoredValues = new Map<string, string>();
 const memorySessionValues = new Map<string, string>();
+const volatileStoredKeys = new Set<string>();
+const volatileSessionKeys = new Set<string>();
 
 export function getStoredValue(key: string): string | null {
+  if (volatileStoredKeys.has(key) || typeof window === 'undefined') {
+    return memoryStoredValues.get(key) ?? null;
+  }
+
   try {
-    const storedValue = typeof window === 'undefined' ? null : window.localStorage.getItem(key);
+    const storedValue = window.localStorage.getItem(key);
     if (storedValue !== null) {
       memoryStoredValues.set(key, storedValue);
       return storedValue;
@@ -26,14 +32,21 @@ export function getStoredValue(key: string): string | null {
 export function setStoredValue(key: string, value: string): void {
   memoryStoredValues.set(key, value);
   try {
-    if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+    if (typeof window === 'undefined') {
+      volatileStoredKeys.add(key);
+      return;
+    }
+    window.localStorage.setItem(key, value);
+    volatileStoredKeys.delete(key);
   } catch {
     // The current tab can keep working with the in-memory value until it closes.
+    volatileStoredKeys.add(key);
   }
 }
 
 export function removeStoredValue(key: string): void {
   memoryStoredValues.delete(key);
+  volatileStoredKeys.delete(key);
   try {
     if (typeof window !== 'undefined') window.localStorage.removeItem(key);
   } catch {
@@ -42,8 +55,12 @@ export function removeStoredValue(key: string): void {
 }
 
 export function getSessionStoredValue(key: string): string | null {
+  if (volatileSessionKeys.has(key) || typeof window === 'undefined') {
+    return memorySessionValues.get(key) ?? null;
+  }
+
   try {
-    const storedValue = typeof window === 'undefined' ? null : window.sessionStorage.getItem(key);
+    const storedValue = window.sessionStorage.getItem(key);
     if (storedValue !== null) {
       memorySessionValues.set(key, storedValue);
       return storedValue;
@@ -58,14 +75,21 @@ export function getSessionStoredValue(key: string): string | null {
 export function setSessionStoredValue(key: string, value: string): void {
   memorySessionValues.set(key, value);
   try {
-    if (typeof window !== 'undefined') window.sessionStorage.setItem(key, value);
+    if (typeof window === 'undefined') {
+      volatileSessionKeys.add(key);
+      return;
+    }
+    window.sessionStorage.setItem(key, value);
+    volatileSessionKeys.delete(key);
   } catch {
     // The active tab can keep using the session until it closes.
+    volatileSessionKeys.add(key);
   }
 }
 
 export function removeSessionStoredValue(key: string): void {
   memorySessionValues.delete(key);
+  volatileSessionKeys.delete(key);
   try {
     if (typeof window !== 'undefined') window.sessionStorage.removeItem(key);
   } catch {
