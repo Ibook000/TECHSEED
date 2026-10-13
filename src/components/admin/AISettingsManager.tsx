@@ -109,7 +109,11 @@ export function AISettingsManager() {
           </p>
         </div>
         {savedMsg && (
-          <div className="text-sm text-amber-700 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200">
+          <div
+            role={savedMsg.startsWith('保存失败') ? 'alert' : 'status'}
+            aria-live={savedMsg.startsWith('保存失败') ? 'assertive' : 'polite'}
+            className="text-sm text-amber-700 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200"
+          >
             {savedMsg}
           </div>
         )}
@@ -127,8 +131,9 @@ export function AISettingsManager() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">Base URL</label>
+            <label htmlFor="ai-primary-base-url" className="block text-sm font-medium text-zinc-700 mb-1.5">Base URL</label>
             <input
+              id="ai-primary-base-url"
               type="text"
               value={primaryForm.baseUrl}
               onChange={e => setPrimaryForm(prev => ({ ...prev, baseUrl: e.target.value }))}
@@ -138,8 +143,9 @@ export function AISettingsManager() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">模型名称</label>
+            <label htmlFor="ai-primary-model" className="block text-sm font-medium text-zinc-700 mb-1.5">模型名称</label>
             <input
+              id="ai-primary-model"
               type="text"
               value={primaryForm.model}
               onChange={e => setPrimaryForm(prev => ({ ...prev, model: e.target.value }))}
@@ -149,7 +155,7 @@ export function AISettingsManager() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+            <label htmlFor="ai-primary-api-key" className="block text-sm font-medium text-zinc-700 mb-1.5">
               API Key
               <span className="text-zinc-400 font-normal ml-2">
                 {settings.primary.hasKey
@@ -158,6 +164,7 @@ export function AISettingsManager() {
               </span>
             </label>
             <textarea
+              id="ai-primary-api-key"
               value={primaryForm.apiKey}
               onChange={e => setPrimaryForm(prev => ({ ...prev, apiKey: e.target.value }))}
               placeholder="一个 key 一行，或用逗号分隔。支持多 key 轮询，自动故障转移"
@@ -191,8 +198,9 @@ export function AISettingsManager() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">Base URL</label>
+            <label htmlFor="ai-fallback-base-url" className="block text-sm font-medium text-zinc-700 mb-1.5">Base URL</label>
             <input
+              id="ai-fallback-base-url"
               type="text"
               value={fallbackForm.baseUrl}
               onChange={e => setFallbackForm(prev => ({ ...prev, baseUrl: e.target.value }))}
@@ -202,8 +210,9 @@ export function AISettingsManager() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">模型名称</label>
+            <label htmlFor="ai-fallback-model" className="block text-sm font-medium text-zinc-700 mb-1.5">模型名称</label>
             <input
+              id="ai-fallback-model"
               type="text"
               value={fallbackForm.model}
               onChange={e => setFallbackForm(prev => ({ ...prev, model: e.target.value }))}
@@ -213,7 +222,7 @@ export function AISettingsManager() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+            <label htmlFor="ai-fallback-api-key" className="block text-sm font-medium text-zinc-700 mb-1.5">
               API Key
               <span className="text-zinc-400 font-normal ml-2">
                 {settings.fallback.hasKey
@@ -222,6 +231,7 @@ export function AISettingsManager() {
               </span>
             </label>
             <textarea
+              id="ai-fallback-api-key"
               value={fallbackForm.apiKey}
               onChange={e => setFallbackForm(prev => ({ ...prev, apiKey: e.target.value }))}
               placeholder="一个 key 一行，或用逗号分隔。主用全部失败后自动切换到此端点"

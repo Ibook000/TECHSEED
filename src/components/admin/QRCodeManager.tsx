@@ -169,6 +169,8 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
     <div className="space-y-6 text-zinc-800">
       {msg && (
         <div
+          role={msg.type === 'error' ? 'alert' : 'status'}
+          aria-live={msg.type === 'error' ? 'assertive' : 'polite'}
           className={`flex items-center gap-2 rounded-[8px] border p-3.5 font-mono text-xs shadow-xs ${
             msg.type === 'success'
               ? 'border-amber-300 bg-amber-50 text-amber-900'
@@ -190,10 +192,11 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
 
           <form onSubmit={handleSaveQR} className="space-y-4 font-mono text-xs">
             <div>
-              <label className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
+              <label htmlFor="wechat-qr-title" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
                 群聊标题 / 提示文案 *
               </label>
               <input
+                id="wechat-qr-title"
                 type="text"
                 required
                 value={title}
@@ -205,9 +208,9 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
 
             {/* File Upload Box */}
             <div>
-              <label className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
+              <p id="wechat-qr-file-help" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
                 二维码图片来源 (本地上传 / 图片URL)
-              </label>
+              </p>
 
               <div className="mt-1 flex justify-center rounded-[8px] border-2 border-dashed border-zinc-200 px-6 py-8 text-center hover:border-amber-400 transition-colors bg-zinc-50/50">
                 <div className="space-y-2">
@@ -216,9 +219,11 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
                     <label className="relative cursor-pointer font-bold text-amber-700 hover:text-amber-800 uppercase tracking-wider underline">
                       <span>点击选择图片上传</span>
                       <input
+                        id="wechat-qr-file"
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
                         onChange={handleFileUpload}
+                        aria-describedby="wechat-qr-file-help"
                         className="sr-only"
                       />
                     </label>
@@ -231,10 +236,11 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
 
             {/* Direct URL input fallback */}
             <div>
-              <label className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
+              <label htmlFor="wechat-qr-image-url" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
                 或者直接输入图片 URL / Base64 Data URL
               </label>
               <input
+                id="wechat-qr-image-url"
                 type="text"
                 value={imageUrl}
                 onChange={e => setImageUrl(e.target.value)}

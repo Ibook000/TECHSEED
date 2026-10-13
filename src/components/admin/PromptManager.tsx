@@ -82,6 +82,7 @@ export const PromptManager: React.FC = () => {
             <button
               key={p.key}
               onClick={() => handleSelectPrompt(p.key)}
+              aria-pressed={selectedPromptKey === p.key}
               className={`w-full rounded-[10px] border p-3.5 text-left transition-all shadow-xs ${
                 selectedPromptKey === p.key
                   ? 'border-amber-300 bg-amber-50 text-amber-900 font-bold'
@@ -104,12 +105,20 @@ export const PromptManager: React.FC = () => {
             <span className="text-zinc-400 text-[10px] uppercase tracking-wider">{promptContent.length} CHARACTERS</span>
           </div>
 
+          <label htmlFor="prompt-content" className="sr-only">
+            {currentPrompt ? `${currentPrompt.name} Prompt 内容` : 'Prompt 内容'}
+          </label>
           <textarea
+            id="prompt-content"
             rows={14}
             value={promptContent}
             onChange={e => setPromptContent(e.target.value)}
+            aria-describedby="prompt-content-help"
             className="w-full rounded-[8px] border border-zinc-200 bg-zinc-50/50 p-4 font-mono text-xs text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:bg-white focus:outline-none leading-relaxed"
           />
+          <p id="prompt-content-help" className="sr-only">
+            编辑当前选中的 AI 面试提示词。修改后保存会对后续面试生效。
+          </p>
 
           <div className="flex items-center justify-between pt-2">
             {savedMsg ? (
