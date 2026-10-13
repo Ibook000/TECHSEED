@@ -24,7 +24,8 @@ export function useModalAccessibility<T extends HTMLElement>(isOpen: boolean, on
         element => element.getAttribute('aria-hidden') !== 'true' && element.getAttribute('tabindex') !== '-1',
       );
 
-    getFocusableElements()[0]?.focus();
+    const autofocusElement = dialog.querySelector<HTMLElement>('[autofocus]');
+    (autofocusElement || getFocusableElements()[0])?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {

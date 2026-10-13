@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CalendarDays, Plus, X } from 'lucide-react';
 import { RecruitmentBatch } from '../../types.js';
+import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 
 export interface NewBatchInput {
   name: string;
@@ -28,6 +29,10 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const closeCreateModal = () => {
+    if (!saving) setIsCreateOpen(false);
+  };
+  const dialogRef = useModalAccessibility<HTMLElement>(isCreateOpen, closeCreateModal);
 
   useEffect(() => setSelectedBatchId(activeBatchId), [activeBatchId]);
 
@@ -118,6 +123,8 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-batch-title"
+            ref={dialogRef}
+            tabIndex={-1}
             className="w-full max-w-lg rounded-[16px] border border-zinc-200 bg-white p-5 shadow-2xl sm:p-6"
           >
             <div className="mb-5 flex items-start justify-between gap-3 border-b border-zinc-100 pb-4">
@@ -132,7 +139,7 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
                 type="button"
                 aria-label="关闭"
                 disabled={saving}
-                onClick={() => setIsCreateOpen(false)}
+                onClick={closeCreateModal}
                 className="rounded-[8px] p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-50"
               >
                 <X className="h-4 w-4" />
@@ -189,7 +196,7 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
                 <button
                   type="button"
                   disabled={saving}
-                  onClick={() => setIsCreateOpen(false)}
+                  onClick={closeCreateModal}
                   className="rounded-[8px] border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
                 >
                   取消
