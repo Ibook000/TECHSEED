@@ -715,23 +715,33 @@ app.get('/api/recruitment-batches', (req: Request, res: Response) => {
 });
 
 app.post('/api/recruitment-batches', (req: Request, res: Response) => {
-  const { name, year, description } = req.body;
-  if (!name || !year) return res.status(400).json({ error: '批次名称和年份不能为空' });
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  const { name, year, description } = body;
+  const numericYear = typeof year === 'number' || typeof year === 'string' ? Number(year) : NaN;
+  if (typeof name !== 'string' || !name.trim() || name.length > 120) {
+    return res.status(400).json({ error: '批次名称不能为空，且不能超过 120 个字符' });
+  }
+  if (!Number.isInteger(numericYear) || numericYear < 2000 || numericYear > 2200) {
+    return res.status(400).json({ error: '年份必须是 2000–2200 之间的整数' });
+  }
+  if (description !== undefined && (typeof description !== 'string' || description.length > 1000)) {
+    return res.status(400).json({ error: '批次说明不能超过 1000 个字符' });
+  }
 
   const newBatch = db.createBatch({
-    id: `batch-${year}-${Date.now().toString(36).substring(4)}`,
-    name,
-    year: Number(year),
+    id: `batch-${numericYear}-${Date.now().toString(36).substring(4)}`,
+    name: name.trim(),
+    year: numericYear,
     isActive: false,
     startDate: new Date().toISOString(),
-    description: description || '',
+    description: description?.trim() || '',
   });
 
   res.json(newBatch);
 });
 
 app.patch('/api/recruitment-batches/:id/active', (req: Request, res: Response) => {
-  db.setActiveBatch(req.params.id);
+  if (!db.setActiveBatch(req.params.id)) return res.status(404).json({ error: '招新批次不存在' });
   res.json({ success: true, activeBatchId: req.params.id });
 });
 

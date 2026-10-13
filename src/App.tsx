@@ -16,6 +16,7 @@ import { RegistrationModal } from './components/student/RegistrationModal.js';
 import { AIInterviewTerminal } from './components/student/AIInterviewTerminal.js';
 import { CandidateStatusView } from './components/student/CandidateStatusView.js';
 import { StatusQueryModal } from './components/student/StatusQueryModal.js';
+import type { NewBatchInput } from './components/admin/BatchManager.js';
 import {
   getAdminToken,
   getStudentAccessToken,
@@ -37,6 +38,7 @@ import {
 const AdminNavbar = lazy(() => import('./components/AdminNavbar.js').then(module => ({ default: module.AdminNavbar })));
 const AdminLoginPage = lazy(() => import('./components/admin/AdminLoginPage.js').then(module => ({ default: module.AdminLoginPage })));
 const CandidateList = lazy(() => import('./components/admin/CandidateList.js').then(module => ({ default: module.CandidateList })));
+const BatchManager = lazy(() => import('./components/admin/BatchManager.js').then(module => ({ default: module.BatchManager })));
 const CandidateDetailModal = lazy(() => import('./components/admin/CandidateDetailModal.js').then(module => ({ default: module.CandidateDetailModal })));
 const QRCodeManager = lazy(() => import('./components/admin/QRCodeManager.js').then(module => ({ default: module.QRCodeManager })));
 const PromptManager = lazy(() => import('./components/admin/PromptManager.js').then(module => ({ default: module.PromptManager })));
@@ -187,6 +189,25 @@ export default function App() {
     } catch (err) {
       console.error('Failed to load batches:', err);
     }
+  };
+
+  const activateBatch = async (batchId: string) => {
+    const res = await fetch(`/api/recruitment-batches/${encodeURIComponent(batchId)}/active`, { method: 'PATCH' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || '切换批次失败，请重试');
+    setActiveBatchId(data.activeBatchId || batchId);
+    setBatches(current => current.map(batch => ({ ...batch, isActive: batch.id === batchId })));
+  };
+
+  const createBatch = async (batch: NewBatchInput) => {
+    const res = await fetch('/api/recruitment-batches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(batch),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || '创建批次失败，请重试');
+    setBatches(current => [...current, data as RecruitmentBatch]);
   };
 
   // Load Candidates & Stats (admin-only data)
@@ -584,6 +605,14 @@ export default function App() {
                 <p className="text-[11px] sm:text-xs text-zinc-500 font-mono tracking-wider mt-1 uppercase">
                   ACTIVE BATCH: <span className="text-amber-700 font-semibold">{batches.find(b => b.id === activeBatchId)?.name || activeBatchId}</span> · AI SCREENING · HUMAN FINAL REVIEW
                 </p>
+                <div className="mt-3">
+                  <BatchManager
+                    batches={batches}
+                    activeBatchId={activeBatchId}
+                    onActivateBatch={activateBatch}
+                    onCreateBatch={createBatch}
+                  />
+                </div>
               </div>
 
               {/* Sub-tab switcher */}

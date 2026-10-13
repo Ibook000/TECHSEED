@@ -496,11 +496,13 @@ class Database {
     return batch;
   }
 
-  public setActiveBatch(batchId: string): void {
+  public setActiveBatch(batchId: string): boolean {
+    if (!this.data.recruitment_batches.some(batch => batch.id === batchId)) return false;
     this.data.recruitment_batches.forEach(b => {
       b.isActive = b.id === batchId;
     });
     this.save();
+    return true;
   }
 
   // Candidates
