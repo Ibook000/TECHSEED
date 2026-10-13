@@ -6,7 +6,7 @@ import { PgyMascot } from '../PgyMascot.js';
 interface AIInterviewTerminalProps {
   candidate: Candidate;
   interview: InterviewSession;
-  onSubmitAnswer: (answer: string) => Promise<void>;
+  onSubmitAnswer: (answer: string, submissionId: string) => Promise<void>;
   onCompleteInterview: () => Promise<void>;
   isLoading: boolean;
 }
@@ -20,6 +20,7 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const pendingSubmission = useRef<{ answer: string; id: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -36,8 +37,14 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
     const text = inputText;
     setInputText('');
     setSubmitError(null);
+    const existingSubmission = pendingSubmission.current;
+    const submissionId = existingSubmission?.answer === text
+      ? existingSubmission.id
+      : crypto.randomUUID();
+    pendingSubmission.current = { answer: text, id: submissionId };
     try {
-      await onSubmitAnswer(text);
+      await onSubmitAnswer(text, submissionId);
+      if (pendingSubmission.current?.id === submissionId) pendingSubmission.current = null;
     } catch (error) {
       setInputText(current => current || text);
       setSubmitError(error instanceof Error ? error.message : '提交失败，请稍后重试');

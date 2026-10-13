@@ -144,6 +144,7 @@ export interface InterviewSession {
   currentRound: number;
   maxRounds: number;
   messages: InterviewMessage[];
+  lastAnswerSubmissionId?: string;
   startedAt: string;
   completedAt?: string;
   updatedAt: string;

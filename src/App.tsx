@@ -356,14 +356,14 @@ export default function App() {
   };
 
   // Submit Answer in Interview Terminal
-  const handleSubmitAnswer = async (answer: string) => {
+  const handleSubmitAnswer = async (answer: string, submissionId: string) => {
     if (!candidateSession) throw new Error('登录状态已失效，请重新验证本人信息');
     setIsInterviewLoading(true);
     try {
       const res = await fetch(`/api/interviews/${candidateSession.id}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answer }),
+        body: JSON.stringify({ answer, submissionId }),
       });
 
       if (!res.ok) {

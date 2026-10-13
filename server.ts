@@ -678,12 +678,16 @@ app.get('/api/interviews/:id', (req: Request, res: Response) => {
 
 app.post('/api/interviews/:id/answer', interviewAnswerRateLimit, async (req: Request, res: Response) => {
   try {
-    const { answer } = req.body;
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+    const { answer, submissionId } = body;
     if (!requireStudentOrAdmin(req, res, req.params.id)) return;
     if (typeof answer !== 'string' || !answer.trim()) return res.status(400).json({ error: '回答内容不能为空' });
     if (answer.length > 4000) return res.status(413).json({ error: '单次回答不能超过 4000 字' });
+    if (submissionId !== undefined && (typeof submissionId !== 'string' || submissionId.length < 8 || submissionId.length > 100)) {
+      return res.status(400).json({ error: '回答提交编号无效' });
+    }
 
-    const result = await RecruitmentService.submitAnswer(req.params.id, answer);
+    const result = await RecruitmentService.submitAnswer(req.params.id, answer, submissionId);
     res.json({ ...result, interview: redactInterview(result.interview) });
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Interview answer submission', '回答暂时无法提交，请稍后重试');

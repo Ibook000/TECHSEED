@@ -125,18 +125,27 @@ export class RecruitmentService {
    * Submit answer to the current AI question
    * Serialized per candidate to prevent read-modify-write races during LLM calls.
    */
-  public static async submitAnswer(candidateId: string, answerText: string) {
+  public static async submitAnswer(candidateId: string, answerText: string, submissionId?: string) {
     return serializeInterviewOp(candidateId, async () => {
-      return this._submitAnswer(candidateId, answerText);
+      return this._submitAnswer(candidateId, answerText, submissionId);
     });
   }
 
-  private static async _submitAnswer(candidateId: string, answerText: string) {
+  private static async _submitAnswer(candidateId: string, answerText: string, submissionId?: string) {
     const candidate = db.getCandidateById(candidateId);
     const interview = db.getInterviewByCandidateId(candidateId);
 
     if (!candidate || !interview) {
       throw new HttpError('面试或候选人不存在', 404);
+    }
+
+    if (submissionId && interview.lastAnswerSubmissionId === submissionId) {
+      if (interview.status === 'COMPLETED') {
+        const evaluation = db.getEvaluationByCandidateId(candidateId);
+        if (evaluation) return { interview, evaluation, isCompleted: true };
+        return this._completeInterview(candidateId);
+      }
+      return { interview, isCompleted: false };
     }
 
     if (interview.status === 'COMPLETED') {
@@ -159,6 +168,7 @@ export class RecruitmentService {
       db.updateInterview({
         ...interview,
         messages: messagesWithAnswer,
+        lastAnswerSubmissionId: submissionId || interview.lastAnswerSubmissionId,
         updatedAt: now,
       });
       return this._completeInterview(candidateId);
@@ -181,6 +191,7 @@ export class RecruitmentService {
       ...interview,
       messages: [...messagesWithAnswer, aiMsg],
       currentRound: nextRoundNumber,
+      lastAnswerSubmissionId: submissionId || interview.lastAnswerSubmissionId,
       updatedAt: new Date().toISOString(),
     };
     db.updateInterview(updatedInterview);
