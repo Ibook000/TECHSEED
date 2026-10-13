@@ -192,7 +192,7 @@ pm2 reload ecosystem.config.cjs --update-env
 
 - 生产环境通过 `.env` 提供配置（PM2 仅注入 `NODE_ENV` 与 `PORT`，其余由 dotenv 从进程工作目录读取）
 - `data/db.json` 为唯一持久化层。运行中可用 `npm run backup` 创建一致的时间戳快照；Docker Compose 部署请运行 `docker compose exec app npm run backup`。**恢复或替换数据库文件前必须先停止服务**，否则内存中的旧状态可能覆盖恢复文件
-- 快照保存在 `data/backups/`，目录和文件仅限当前系统用户读取；它们与数据库一样含敏感报名资料。按学校的数据留存要求清理旧快照，并把需要灾备的副本复制到受控的独立存储
+- 快照保存在 `data/backups/`；POSIX 系统上脚本以 `0700` 创建目录、以 `0600` 创建文件。Windows 上 Node.js 权限位不能区分所有者、组和其他用户，部署时应通过 NTFS ACL 将 `data/` 限制给服务账号。备份含敏感报名资料，应按学校的数据留存要求清理，并把灾备副本复制到受控的独立存储
 - 数据库写入采用临时文件替换；若现有文件无法解析，服务会停止启动并保留原文件，避免自动重置覆盖报名数据
 - 管理端 Token 签名密钥持久化在数据库中，PM2 内存重启后登录态仍然有效
 
