@@ -357,7 +357,7 @@ export default function App() {
 
   // Submit Answer in Interview Terminal
   const handleSubmitAnswer = async (answer: string) => {
-    if (!candidateSession) return;
+    if (!candidateSession) throw new Error('登录状态已失效，请重新验证本人信息');
     setIsInterviewLoading(true);
     try {
       const res = await fetch(`/api/interviews/${candidateSession.id}/answer`, {
@@ -366,26 +366,26 @@ export default function App() {
         body: JSON.stringify({ answer }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setActiveInterview(data.interview);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || '提交回答失败，请稍后重试');
+      }
 
-        if (data.isCompleted) {
-          // Refresh candidate session with new status
-          const candRes = await fetch(`/api/candidates/${candidateSession.id}`);
-          if (candRes.ok) {
-            const candData = await candRes.json();
-            setCandidateSession(candData.candidate);
-          }
-          setStudentScreen('status');
-          loadCandidatesAndStats(activeBatchId);
+      const data = await res.json();
+      setActiveInterview(data.interview);
+
+      if (data.isCompleted) {
+        // Refresh candidate session with new status
+        const candRes = await fetch(`/api/candidates/${candidateSession.id}`);
+        if (candRes.ok) {
+          const candData = await candRes.json();
+          setCandidateSession(candData.candidate);
         }
-      } else {
-        const err = await res.json();
-        alert(err.error || '提交回答失败');
+        setStudentScreen('status');
+        loadCandidatesAndStats(activeBatchId);
       }
     } catch (err: any) {
-      alert(err.message || '网络连接异常');
+      throw new Error(err instanceof Error ? err.message : '网络连接异常，请稍后重试');
     } finally {
       setIsInterviewLoading(false);
     }

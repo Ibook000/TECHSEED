@@ -19,6 +19,7 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
   isLoading,
 }) => {
   const [inputText, setInputText] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -34,7 +35,13 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
     if (!inputText.trim() || isLoading) return;
     const text = inputText;
     setInputText('');
-    await onSubmitAnswer(text);
+    setSubmitError(null);
+    try {
+      await onSubmitAnswer(text);
+    } catch (error) {
+      setInputText(current => current || text);
+      setSubmitError(error instanceof Error ? error.message : '提交失败，请稍后重试');
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -179,12 +186,22 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
                   ref={textareaRef}
                   disabled={isLoading}
                   value={inputText}
-                  onChange={e => setInputText(e.target.value)}
+                  onChange={e => {
+                    setInputText(e.target.value);
+                    setSubmitError(null);
+                  }}
                   onKeyDown={handleKeyDown}
                   rows={3}
                   placeholder="具体描述你的思考过程、动手排查细节或实际经验... (Enter 发送，Shift + Enter 换行)"
                   className="w-full resize-none rounded-[12px] border border-zinc-200 bg-white p-3.5 text-xs font-sans text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 focus:outline-none disabled:opacity-50 shadow-xs"
                 />
+
+                {submitError && (
+                  <p role="alert" className="mt-2 flex items-start gap-1.5 text-[11px] text-rose-700">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>{submitError} 你的回答仍保留在输入框中，可以重试。</span>
+                  </p>
+                )}
 
                 <div className="absolute right-3 bottom-3 flex items-center gap-2">
                   <button
@@ -218,4 +235,3 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
     </div>
   );
 };
-

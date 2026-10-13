@@ -16,18 +16,19 @@ import { AIService } from './ai.js';
  * (start, submit, complete) for the same candidate to prevent
  * read-modify-write race conditions during async LLM calls.
  */
-const interviewLocks = new Map<string, Promise<any>>();
+const interviewLocks = new Map<string, Promise<unknown>>();
 
 async function serializeInterviewOp<T>(candidateId: string, fn: () => Promise<T>): Promise<T> {
   const prev = interviewLocks.get(candidateId) || Promise.resolve();
   const next = prev.then(fn, fn); // resolve or reject, both advance the chain
-  const cleanup = next.catch(() => {}).then(() => {
+  interviewLocks.set(candidateId, next);
+  const releaseLock = () => {
     // Only delete if this is still the latest pending op for this candidate
     if (interviewLocks.get(candidateId) === next) {
       interviewLocks.delete(candidateId);
     }
-  });
-  interviewLocks.set(candidateId, cleanup);
+  };
+  void next.then(releaseLock, releaseLock);
   return next;
 }
 
@@ -151,16 +152,21 @@ export class RecruitmentService {
       round: interview.currentRound,
     };
 
-    interview.messages.push(candidateMsg);
+    const messagesWithAnswer = [...interview.messages, candidateMsg];
 
     // If max rounds reached or candidate completed 4 rounds with sufficient depth
     if (interview.currentRound >= interview.maxRounds) {
+      db.updateInterview({
+        ...interview,
+        messages: messagesWithAnswer,
+        updatedAt: now,
+      });
       return this._completeInterview(candidateId);
     }
 
     // Generate dynamic follow-up
     const nextRoundNumber = interview.currentRound + 1;
-    const followUp = await AIService.generateFollowUp(candidate.profile, interview.messages, interview.currentRound);
+    const followUp = await AIService.generateFollowUp(candidate.profile, messagesWithAnswer, interview.currentRound);
 
     const aiMsg = {
       id: `msg-${Date.now()}-ai`,
@@ -171,12 +177,15 @@ export class RecruitmentService {
       analysis: followUp.analysis,
     };
 
-    interview.messages.push(aiMsg);
-    interview.currentRound = nextRoundNumber;
-    interview.updatedAt = new Date().toISOString();
-    db.updateInterview(interview);
+    const updatedInterview = {
+      ...interview,
+      messages: [...messagesWithAnswer, aiMsg],
+      currentRound: nextRoundNumber,
+      updatedAt: new Date().toISOString(),
+    };
+    db.updateInterview(updatedInterview);
 
-    return { interview, isCompleted: false };
+    return { interview: updatedInterview, isCompleted: false };
   }
 
   /**
