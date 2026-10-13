@@ -281,7 +281,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               />
               <span>
                 <strong className="text-zinc-900">报名信息使用说明：</strong>
-                为完成本次招新，系统会保存你提交的个人信息和 AI 面试问答，用于招新审核与联系；若管理员配置外部 AI 服务，面试内容会发送给所配置的服务商处理。请勿提交与报名无关的敏感信息。
+                为完成本次招新，系统会保存报名信息和 AI 面试问答，用于招新审核与联系。若管理员配置外部 AI 服务，系统会将面试问答、技术基础、意向方向和自我介绍发送给服务商处理；姓名、学号、专业、班级、手机号和微信号不会作为独立字段发送。请勿在自我介绍或回答中填写无关的敏感信息。
                 <span className="mt-1 block font-medium">我已阅读并知悉以上信息。</span>
               </span>
             </label>

@@ -17,7 +17,7 @@ export const CANDIDATE_STATUSES = [
 
 export type CandidateStatus = (typeof CANDIDATE_STATUSES)[number];
 
-export const REGISTRATION_CONSENT_VERSION = 'registration-consent-v1';
+export const REGISTRATION_CONSENT_VERSION = 'registration-consent-v2';
 
 export interface CandidatePrivacyConsent {
   version: string;

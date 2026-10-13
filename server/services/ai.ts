@@ -544,13 +544,11 @@ export class AIService {
     const systemPrompt = promptConfig?.prompt || '你是高校技术部招新面试官，请向新生提出首个初筛问题。';
 
     const userPrompt = `候选人基本信息：
-- 姓名: ${profile.name}
-- 专业: ${profile.major} (${profile.className})
 - 技术基础: ${profile.technicalFoundation}
 - 期望方向: ${profile.techDirection}
 - 个人自我介绍: "${profile.selfIntro}"
 
-请根据这位新生的基础和方向，提出第一个破冰/初筛提问。
+以上信息已去除姓名、学号、班级与联系方式。请根据技术基础、方向和自我介绍，提出第一个破冰/初筛提问；不要询问或输出个人身份信息。
 要求：
 1. 语言亲切、专业、像师兄师姐交流，避免僵硬的高考式提问；
 2. 针对他自我介绍中提到的细节或他对${profile.techDirection}方向的兴趣出发；
@@ -591,14 +589,16 @@ export class AIService {
     const followupPrompt = promptConfig?.prompt || '请基于候选人最新回答，深入追问细节或行为证据。';
 
     const conversationHistory = history
-      .map(m => `${m.sender === 'ai' ? '面试官' : profile.name}: ${m.content}`)
+      .map(m => `${m.sender === 'ai' ? '面试官' : '候选人'}: ${m.content}`)
       .join('\n');
 
     const userPrompt = `${followupPrompt}
 
 【候选人信息】
-姓名: ${profile.name}, 专业: ${profile.major}, 基础: ${profile.technicalFoundation}, 方向: ${profile.techDirection}
+技术基础: ${profile.technicalFoundation}, 方向: ${profile.techDirection}
 自我介绍: ${profile.selfIntro}
+
+以上信息已去除姓名、学号、专业、班级与联系方式。不要询问或输出个人身份信息。
 
 【当前面试轮次】: 第 ${currentRound} 轮 (共 4-5 轮)
 ${isLastRound ? '注意：这是面试的最后一轮提问，可以询问学习规划、希望参与的方向或请候选人补充想分享的信息。' : '注意：请针对候选人明确提到的经历或想法进行友好追问；如果信息不足，邀请补充或说明还没有相关经历。不要推断套话或真实性。'}
@@ -665,7 +665,7 @@ ${conversationHistory}
     messages: InterviewMessage[]
   ): Promise<AIEvaluation> {
     const candidateConversation = messages
-      .map(m => `${m.sender === 'ai' ? '面试官' : profile.name}: ${m.content}`)
+      .map(m => `${m.sender === 'ai' ? '面试官' : '候选人'}: ${m.content}`)
       .join('\n\n');
 
     const promptConfig = db.getPrompts().find(p => p.key === 'evaluation_prompt');
@@ -674,11 +674,11 @@ ${conversationHistory}
     const userPrompt = `${evalPrompt}
 
 【候选人信息】
-姓名: ${profile.name}
-专业: ${profile.major} (${profile.className})
 技术基础: ${profile.technicalFoundation}
 技术方向兴趣: ${profile.techDirection}
 个人介绍: ${profile.selfIntro}
+
+系统已去除姓名、学号、专业、班级与联系方式。不得猜测或要求个人身份信息。
 
 【完整面试记录】
 ${candidateConversation}
