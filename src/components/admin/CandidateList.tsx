@@ -379,8 +379,10 @@ export const CandidateList: React.FC<CandidateListProps> = ({
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         <div className="flex flex-1 items-center gap-2">
           <div className="relative flex-1 max-w-md">
+            <label htmlFor="candidate-search" className="sr-only">搜索候选人</label>
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
             <input
+              id="candidate-search"
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -440,8 +442,9 @@ export const CandidateList: React.FC<CandidateListProps> = ({
       {showAdvancedFilter && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-[10px] border border-zinc-200 bg-zinc-50/80 p-4 font-mono text-xs shadow-xs">
           <div>
-            <label className="text-zinc-500 block mb-1 uppercase tracking-wider text-[10px] font-semibold">技术方向</label>
+            <label htmlFor="candidate-direction-filter" className="text-zinc-500 block mb-1 uppercase tracking-wider text-[10px] font-semibold">技术方向</label>
             <select
+              id="candidate-direction-filter"
               value={directionFilter}
               onChange={e => setDirectionFilter(e.target.value)}
               className="w-full rounded-[6px] border border-zinc-200 bg-white p-2 text-zinc-800 focus:border-amber-400 focus:outline-none shadow-xs"
@@ -456,8 +459,9 @@ export const CandidateList: React.FC<CandidateListProps> = ({
           </div>
 
           <div>
-            <label className="text-zinc-500 block mb-1 uppercase tracking-wider text-[10px] font-semibold">AI 初筛等级</label>
+            <label htmlFor="candidate-grade-filter" className="text-zinc-500 block mb-1 uppercase tracking-wider text-[10px] font-semibold">AI 初筛等级</label>
             <select
+              id="candidate-grade-filter"
               value={gradeFilter}
               onChange={e => setGradeFilter(e.target.value)}
               className="w-full rounded-[6px] border border-zinc-200 bg-white p-2 text-zinc-800 focus:border-amber-400 focus:outline-none shadow-xs"
@@ -471,8 +475,9 @@ export const CandidateList: React.FC<CandidateListProps> = ({
           </div>
 
           <div>
-            <label className="text-zinc-500 block mb-1 uppercase tracking-wider text-[10px] font-semibold">最低 AI 评分 (分)</label>
+            <label htmlFor="candidate-min-score" className="text-zinc-500 block mb-1 uppercase tracking-wider text-[10px] font-semibold">最低 AI 评分 (分)</label>
             <input
+              id="candidate-min-score"
               type="number"
               min="0"
               max="100"
