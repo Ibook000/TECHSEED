@@ -195,17 +195,29 @@ function redactInterview(interview: ReturnType<typeof db.getInterviewByCandidate
   };
 }
 
-// Student-facing candidate responses omit direct contact details; administrators can
-// still access the full profile through their authenticated routes.
+// Student-facing candidate responses omit direct contact details and internal AI
+// assessment metadata. Administrators can access the complete record after login.
 function redactCandidate(candidate: NonNullable<ReturnType<typeof db.getCandidateById>>) {
+  const studentCandidate = { ...candidate };
+  delete studentCandidate.aiScore;
+  delete studentCandidate.aiRecommendation;
+  delete studentCandidate.candidateType;
+  delete studentCandidate.aiCompletedAt;
+
   return {
-    ...candidate,
+    ...studentCandidate,
     profile: {
       ...candidate.profile,
       phone: candidate.profile.phone ? '已隐藏' : '',
       wechat: candidate.profile.wechat ? '已隐藏' : '',
     },
   };
+}
+
+function redactEvaluationForStudent<T extends { evaluation?: unknown }>(result: T): Omit<T, 'evaluation'> {
+  const studentResult = { ...result };
+  delete studentResult.evaluation;
+  return studentResult as Omit<T, 'evaluation'>;
 }
 
 // Routes that students can reach without an admin session. Candidate-specific handlers
@@ -688,7 +700,8 @@ app.post('/api/interviews/:id/answer', interviewAnswerRateLimit, async (req: Req
     }
 
     const result = await RecruitmentService.submitAnswer(req.params.id, answer, submissionId);
-    res.json({ ...result, interview: redactInterview(result.interview) });
+    const visibleResult = isAdminAuthed(req) ? result : redactEvaluationForStudent(result);
+    res.json({ ...visibleResult, interview: redactInterview(result.interview) });
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Interview answer submission', '回答暂时无法提交，请稍后重试');
   }
@@ -698,7 +711,8 @@ app.post('/api/interviews/:id/complete', interviewCompleteRateLimit, async (req:
   try {
     if (!requireStudentOrAdmin(req, res, req.params.id)) return;
     const result = await RecruitmentService.completeInterview(req.params.id);
-    res.json({ ...result, interview: redactInterview(result.interview) });
+    const visibleResult = isAdminAuthed(req) ? result : redactEvaluationForStudent(result);
+    res.json({ ...visibleResult, interview: redactInterview(result.interview) });
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Interview completion', '面试暂时无法完成，请稍后重试');
   }
@@ -706,6 +720,9 @@ app.post('/api/interviews/:id/complete', interviewCompleteRateLimit, async (req:
 
 // Evaluation
 app.get('/api/evaluations/:candidateId', (req: Request, res: Response) => {
+  if (!isAdminAuthed(req)) {
+    return res.status(401).json({ error: '未授权：请登录后再访问后台管理接口' });
+  }
   const evalData = db.getEvaluationByCandidateId(req.params.candidateId);
   if (!evalData) return res.status(404).json({ error: 'AI 评估报告不存在' });
   res.json(evalData);
