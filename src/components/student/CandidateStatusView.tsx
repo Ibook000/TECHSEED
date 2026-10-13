@@ -272,7 +272,7 @@ export const CandidateStatusView: React.FC<CandidateStatusViewProps> = ({
                   <div className="p-4 bg-white rounded-[14px] border border-zinc-200 shadow-md transition-transform hover:scale-[1.01]">
                     <img
                       src={qrData.qr.imageUrl}
-                      alt="信电技术部招新群二维码"
+                      alt="技术部招新群二维码"
                       className="h-52 w-52 sm:h-56 sm:w-56 object-contain rounded-[6px]"
                       referrerPolicy="no-referrer"
                     />

@@ -305,7 +305,8 @@ export class RecruitmentService {
       };
     }
 
-    const qr = db.getWeChatQR(candidate.batchId) || db.getWeChatQR('batch-2026') || db.getWeChatQR();
+    // Do not expose another cohort's group QR when this batch has no active code.
+    const qr = db.getWeChatQR(candidate.batchId);
     return {
       authorized: true,
       status: candidate.status,
