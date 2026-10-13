@@ -19,6 +19,7 @@ import { StatusQueryModal } from './components/student/StatusQueryModal.js';
 import type { NewBatchInput } from './components/admin/BatchManager.js';
 import {
   getAdminToken,
+  getSessionStoredValue,
   getStudentAccessToken,
   clearAdminSession,
   clearStudentSession,
@@ -26,6 +27,7 @@ import {
   removeStoredValue,
   saveStudentSession,
   setStoredValue,
+  ADMIN_USER_KEY,
   STUDENT_CANDIDATE_ID_KEY,
 } from './lib/auth.js';
 import {
@@ -114,13 +116,11 @@ export default function App() {
 
   // Authentication State - Strictly null by default so students cannot enter backend without credentials
   const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = sessionStorage.getItem('tech_admin_user');
-        if (stored) return JSON.parse(stored);
-      } catch (e) {
-        // ignore
-      }
+    try {
+      const stored = getSessionStoredValue(ADMIN_USER_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      // Ignore invalid or unavailable session data and show the login page.
     }
     return null;
   });

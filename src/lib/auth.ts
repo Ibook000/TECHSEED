@@ -7,6 +7,7 @@ export const STUDENT_TOKEN_KEY = 'tech_student_access_token';
 export const STUDENT_CANDIDATE_ID_KEY = 'tech_student_candidate_id';
 
 const memoryStoredValues = new Map<string, string>();
+const memorySessionValues = new Map<string, string>();
 
 export function getStoredValue(key: string): string | null {
   try {
@@ -40,29 +41,49 @@ export function removeStoredValue(key: string): void {
   }
 }
 
-export function getAdminToken(): string {
+export function getSessionStoredValue(key: string): string | null {
   try {
-    return sessionStorage.getItem(ADMIN_TOKEN_KEY) || '';
+    const storedValue = typeof window === 'undefined' ? null : window.sessionStorage.getItem(key);
+    if (storedValue !== null) {
+      memorySessionValues.set(key, storedValue);
+      return storedValue;
+    }
+    memorySessionValues.delete(key);
+    return null;
   } catch {
-    return '';
+    return memorySessionValues.get(key) ?? null;
   }
+}
+
+export function setSessionStoredValue(key: string, value: string): void {
+  memorySessionValues.set(key, value);
+  try {
+    if (typeof window !== 'undefined') window.sessionStorage.setItem(key, value);
+  } catch {
+    // The active tab can keep using the session until it closes.
+  }
+}
+
+export function removeSessionStoredValue(key: string): void {
+  memorySessionValues.delete(key);
+  try {
+    if (typeof window !== 'undefined') window.sessionStorage.removeItem(key);
+  } catch {
+    // The active tab no longer uses the removed in-memory session value.
+  }
+}
+
+export function getAdminToken(): string {
+  return getSessionStoredValue(ADMIN_TOKEN_KEY) || '';
 }
 
 export function saveAdminToken(token: string): void {
-  try {
-    sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
-  } catch {
-    // The current in-memory session still works if storage is unavailable.
-  }
+  setSessionStoredValue(ADMIN_TOKEN_KEY, token);
 }
 
 export function clearAdminSession(): void {
-  try {
-    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-    sessionStorage.removeItem(ADMIN_USER_KEY);
-  } catch {
-    // ignore
-  }
+  removeSessionStoredValue(ADMIN_TOKEN_KEY);
+  removeSessionStoredValue(ADMIN_USER_KEY);
 }
 
 export function getStudentAccessToken(): string {

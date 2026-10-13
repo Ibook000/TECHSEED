@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Lock, User, ArrowLeft, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { AdminUser } from '../../types.js';
 import { PgyMascot } from '../PgyMascot.js';
+import { ADMIN_USER_KEY, saveAdminToken, setSessionStoredValue } from '../../lib/auth.js';
 
 interface AdminLoginPageProps {
   onLoginSuccess: (user: AdminUser) => void;
@@ -41,10 +42,8 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
       const data = await res.json();
       if (res.ok && data.success) {
         // Save session storage for browser session continuity
-        sessionStorage.setItem('tech_admin_user', JSON.stringify(data.user));
-        if (data.token) {
-          sessionStorage.setItem('tech_admin_token', data.token);
-        }
+        setSessionStoredValue(ADMIN_USER_KEY, JSON.stringify(data.user));
+        if (data.token) saveAdminToken(data.token);
         onLoginSuccess(data.user);
       } else {
         setError(data.error || '登录失败：账号或密码不正确');
