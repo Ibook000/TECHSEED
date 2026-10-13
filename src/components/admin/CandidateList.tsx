@@ -307,13 +307,21 @@ export const CandidateList: React.FC<CandidateListProps> = ({
     const isCurrent = sortField === field;
     return (
       <th
-        onClick={() => handleSort(field)}
-        className={`px-3 py-3 font-medium cursor-pointer select-none transition-colors group hover:bg-zinc-100/70 ${className} ${
+        scope="col"
+        aria-sort={isCurrent ? (sortOrder === 'desc' ? 'descending' : 'ascending') : undefined}
+        className={`px-3 py-3 font-medium select-none transition-colors group hover:bg-zinc-100/70 ${className} ${
           align === 'right' ? 'text-right' : 'text-left'
         }`}
-        title={`点击按「${label}」${isCurrent && sortOrder === 'desc' ? '升序' : '降序'}自由排序`}
       >
-        <div className={`inline-flex items-center gap-1.5 ${align === 'right' ? 'justify-end' : 'justify-start'}`}>
+        <button
+          type="button"
+          onClick={() => handleSort(field)}
+          title={`点击按「${label}」${isCurrent && sortOrder === 'desc' ? '升序' : '降序'}自由排序`}
+          aria-label={`按${label}${isCurrent && sortOrder === 'desc' ? '升序' : '降序'}排序`}
+          className={`inline-flex w-full items-center gap-1.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 ${
+            align === 'right' ? 'justify-end' : 'justify-start'
+          }`}
+        >
           <span
             className={`transition-colors whitespace-nowrap ${
               isCurrent ? 'text-amber-700 font-bold' : 'text-zinc-600 group-hover:text-zinc-950'
@@ -323,14 +331,14 @@ export const CandidateList: React.FC<CandidateListProps> = ({
           </span>
           {isCurrent ? (
             sortOrder === 'desc' ? (
-              <ArrowDown className="h-3 w-3 text-amber-600 shrink-0" />
+              <ArrowDown aria-hidden="true" className="h-3 w-3 text-amber-600 shrink-0" />
             ) : (
-              <ArrowUp className="h-3 w-3 text-amber-600 shrink-0" />
+              <ArrowUp aria-hidden="true" className="h-3 w-3 text-amber-600 shrink-0" />
             )
           ) : (
-            <ArrowUpDown className="h-3 w-3 text-zinc-300 group-hover:text-zinc-500 transition-opacity shrink-0" />
+            <ArrowUpDown aria-hidden="true" className="h-3 w-3 text-zinc-300 group-hover:text-zinc-500 transition-opacity shrink-0" />
           )}
-        </div>
+        </button>
       </th>
     );
   };
