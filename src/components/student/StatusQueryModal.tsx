@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Search, AlertCircle, ArrowRight, Check, RotateCcw } from 'lucide-react';
 import { Candidate, InterviewSession } from '../../types.js';
+import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 import {
   clearStudentSession,
   getStudentAccessToken,
@@ -32,6 +33,7 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [detectedRecentId, setDetectedRecentId] = useState('');
   const [detectedRecentName, setDetectedRecentName] = useState('');
+  const dialogRef = useModalAccessibility<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -116,7 +118,14 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-start sm:items-center p-2.5 sm:p-4 bg-zinc-900/40 backdrop-blur-xs font-mono text-xs overflow-y-auto overflow-x-hidden overscroll-contain">
-      <div className="relative w-full max-w-full sm:max-w-md rounded-[18px] border border-zinc-200 bg-white p-4 sm:p-6 shadow-2xl text-zinc-800 my-auto sm:my-8 max-h-[96dvh] overflow-y-auto overflow-x-hidden overscroll-contain">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="status-query-modal-title"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative w-full max-w-full sm:max-w-md rounded-[18px] border border-zinc-200 bg-white p-4 sm:p-6 shadow-2xl text-zinc-800 my-auto sm:my-8 max-h-[96dvh] overflow-y-auto overflow-x-hidden overscroll-contain"
+      >
         <div className="flex items-start gap-2 sm:gap-3 pb-3 border-b border-zinc-100">
           <div className="shrink-0 mt-0.5 flex h-8 w-8 items-center justify-center rounded-[8px] bg-amber-50 text-amber-700">
             <Search className="h-4 w-4" />
@@ -125,7 +134,7 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
             <div className="font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-amber-700">
               STATUS QUERY
             </div>
-            <h3 className="mt-1 text-base sm:text-lg font-bold text-zinc-950 tracking-tight break-words">
+            <h3 id="status-query-modal-title" className="mt-1 text-base sm:text-lg font-bold text-zinc-950 tracking-tight break-words">
               找回报名进度
             </h3>
             <p className="mt-1 text-[11px] sm:text-xs text-zinc-600 font-sans leading-relaxed">
@@ -165,7 +174,7 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
         )}
 
         {error && (
-          <div className="mt-4 flex items-start gap-2 rounded-[10px] border border-rose-200 bg-rose-50 p-3 text-xs font-mono text-rose-700">
+          <div role="alert" className="mt-4 flex items-start gap-2 rounded-[10px] border border-rose-200 bg-rose-50 p-3 text-xs font-mono text-rose-700">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
             <span className="min-w-0 break-words">{error}</span>
           </div>
@@ -173,9 +182,10 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
 
         <form onSubmit={handleSearch} className="mt-5 space-y-3.5">
           <div>
-            <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">大学学号</label>
+            <label htmlFor="status-query-student-id" className="block text-[11px] text-zinc-600 font-medium tracking-wider">大学学号</label>
             <div className="relative mt-1.5">
               <input
+                id="status-query-student-id"
                 type="text"
                 required
                 maxLength={64}
@@ -197,8 +207,9 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
           {!hasSavedSession && (
             <>
               <div>
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">报名时填写的姓名</label>
+                <label htmlFor="status-query-name" className="block text-[11px] text-zinc-600 font-medium tracking-wider">报名时填写的姓名</label>
                 <input
+                  id="status-query-name"
                   type="text"
                   required
                   maxLength={80}
@@ -210,8 +221,9 @@ export const StatusQueryModal: React.FC<StatusQueryModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">报名时填写的手机号</label>
+                <label htmlFor="status-query-phone" className="block text-[11px] text-zinc-600 font-medium tracking-wider">报名时填写的手机号</label>
                 <input
+                  id="status-query-phone"
                   type="tel"
                   required
                   maxLength={40}

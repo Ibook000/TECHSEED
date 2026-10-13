@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Sparkles, AlertCircle, Check } from 'lucide-react';
 import { CandidateProfile, TechnicalFoundation, TechDirection, REGISTRATION_CONSENT_VERSION } from '../../types.js';
+import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 import { PgyMascot } from '../PgyMascot.js';
 
 interface RegistrationModalProps {
@@ -48,6 +49,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useModalAccessibility<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) setPrivacyAcknowledged(false);
@@ -97,7 +99,14 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-start sm:items-center p-2.5 sm:p-4 bg-zinc-900/40 backdrop-blur-xs overflow-y-auto overflow-x-hidden font-mono text-xs overscroll-contain">
-      <div className="relative w-full max-w-full sm:max-w-2xl rounded-[18px] border border-zinc-200 bg-white p-4 sm:p-8 shadow-2xl my-auto sm:my-8 text-zinc-800 flex flex-col max-h-[96dvh] sm:max-h-[92vh] overflow-hidden">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="registration-modal-title"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative w-full max-w-full sm:max-w-2xl rounded-[18px] border border-zinc-200 bg-white p-4 sm:p-8 shadow-2xl my-auto sm:my-8 text-zinc-800 flex flex-col max-h-[96dvh] sm:max-h-[92vh] overflow-hidden"
+      >
         {/* Header — close button is a flex item (not absolute) so it can never overlap the title */}
         <div className="shrink-0 flex items-start gap-2 sm:gap-3 pb-3 border-b border-zinc-100">
           <PgyMascot size="md" variant="badge" className="shrink-0 mt-0.5 scale-90 sm:scale-100 origin-top-left" />
@@ -107,7 +116,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               <span>/</span>
               <span className="text-amber-600">学生会技术部</span>
             </div>
-            <h2 className="mt-1 text-base sm:text-xl font-bold text-zinc-950 tracking-tight break-words">
+            <h2 id="registration-modal-title" className="mt-1 text-base sm:text-xl font-bold text-zinc-950 tracking-tight break-words">
               填写基本信息 · 开启初筛
             </h2>
             <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-zinc-600 font-sans leading-relaxed break-words">
@@ -124,7 +133,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         </div>
 
         {error && (
-          <div className="mt-2.5 shrink-0 flex items-center gap-2 rounded-[10px] border border-rose-200 bg-rose-50 p-2.5 sm:p-3 text-xs font-mono text-rose-700">
+          <div role="alert" className="mt-2.5 shrink-0 flex items-center gap-2 rounded-[10px] border border-rose-200 bg-rose-50 p-2.5 sm:p-3 text-xs font-mono text-rose-700">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -135,8 +144,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           <div className="flex-1 overflow-y-auto space-y-3.5 sm:space-y-4 pr-1 sm:pr-2 overscroll-contain">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">姓名 *</label>
+                <label htmlFor="registration-name" className="block text-[11px] text-zinc-600 font-medium tracking-wider">姓名 *</label>
                 <input
+                  id="registration-name"
                   type="text"
                   required
                   value={name}
@@ -147,8 +157,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">学号 *</label>
+                <label htmlFor="registration-student-id" className="block text-[11px] text-zinc-600 font-medium tracking-wider">学号 *</label>
                 <input
+                  id="registration-student-id"
                   type="text"
                   required
                   value={studentId}
@@ -161,7 +172,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">专业 *</label>
+                <label htmlFor="input-student-major" className="block text-[11px] text-zinc-600 font-medium tracking-wider">专业 *</label>
                 <input
                   id="input-student-major"
                   type="text"
@@ -174,7 +185,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">班级 *</label>
+                <label htmlFor="input-student-class" className="block text-[11px] text-zinc-600 font-medium tracking-wider">班级 *</label>
                 <input
                   id="input-student-class"
                   type="text"
@@ -189,20 +200,23 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">手机联系方式 *</label>
+                <label htmlFor="registration-phone" className="block text-[11px] text-zinc-600 font-medium tracking-wider">手机联系方式 *</label>
                 <input
+                  id="registration-phone"
                   type="tel"
                   required
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
+                  autoComplete="tel"
                   placeholder="13800000000"
                   className="mt-1.5 w-full rounded-[10px] border border-zinc-200 bg-zinc-50/60 px-3 py-2 sm:px-3.5 sm:py-2.5 text-xs font-mono text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 focus:outline-none shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">微信号 (方便后续联系)</label>
+                <label htmlFor="registration-wechat" className="block text-[11px] text-zinc-600 font-medium tracking-wider">微信号 (方便后续联系)</label>
                 <input
+                  id="registration-wechat"
                   type="text"
                   value={wechat}
                   onChange={e => setWechat(e.target.value)}
@@ -215,15 +229,16 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             {/* Technical Foundation */}
             <div>
               <div className="flex items-center justify-between flex-wrap gap-1">
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">当前技术基础</label>
+                <span id="registration-foundation-label" className="block text-[11px] text-zinc-600 font-medium tracking-wider">当前技术基础</span>
                 <span className="text-[10px] text-amber-700 font-mono">「完全没有」不作为减分项</span>
               </div>
-              <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-5 gap-1.5 sm:gap-2">
+              <div role="group" aria-labelledby="registration-foundation-label" className="mt-1.5 grid grid-cols-2 sm:grid-cols-5 gap-1.5 sm:gap-2">
                 {FOUNDATIONS.map(f => (
                   <button
                     type="button"
                     key={f}
                     onClick={() => setTechnicalFoundation(f)}
+                    aria-pressed={technicalFoundation === f}
                     className={`rounded-[8px] border px-2 py-1.5 sm:px-2.5 sm:py-2 text-[11px] sm:text-xs font-mono tracking-wider transition-all text-center shadow-xs ${
                       technicalFoundation === f
                         ? 'border-amber-400 bg-amber-100/80 text-amber-950 font-bold'
@@ -238,13 +253,14 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
             {/* Tech Direction Interest */}
             <div>
-              <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">期望加入的技术方向</label>
-              <div className="mt-1.5 flex flex-wrap gap-1.5 sm:gap-2">
+              <span id="registration-direction-label" className="block text-[11px] text-zinc-600 font-medium tracking-wider">期望加入的技术方向</span>
+              <div role="group" aria-labelledby="registration-direction-label" className="mt-1.5 flex flex-wrap gap-1.5 sm:gap-2">
                 {DIRECTIONS.map(d => (
                   <button
                     type="button"
                     key={d}
                     onClick={() => setTechDirection(d)}
+                    aria-pressed={techDirection === d}
                     className={`rounded-[8px] border px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs font-mono tracking-wider transition-all shadow-xs ${
                       techDirection === d
                         ? 'border-amber-400 bg-[#FACC15] text-zinc-950 font-bold'
@@ -260,14 +276,16 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             {/* Self Intro */}
             <div>
               <div className="flex items-center justify-between">
-                <label className="block text-[11px] text-zinc-600 font-medium tracking-wider">个人自我介绍 *</label>
-                <span className="text-[10px] text-zinc-400 font-mono">{selfIntro.length} 字</span>
+                <label htmlFor="registration-self-intro" className="block text-[11px] text-zinc-600 font-medium tracking-wider">个人自我介绍 *</label>
+                <span id="registration-self-intro-count" className="text-[10px] text-zinc-400 font-mono">{selfIntro.length} 字</span>
               </div>
               <textarea
+                id="registration-self-intro"
                 required
                 rows={3}
                 value={selfIntro}
                 onChange={e => setSelfIntro(e.target.value)}
+                aria-describedby="registration-self-intro-count"
                 placeholder="聊聊你平时的兴趣爱好、动手折腾过的小事、或是为什么想要加入技术部？（AI 初筛将围绕你的介绍展开针对性交流）"
                 className="mt-1.5 w-full rounded-[10px] border border-zinc-200 bg-zinc-50/60 p-2.5 sm:p-3 text-xs font-sans text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 focus:outline-none shadow-xs"
               />
