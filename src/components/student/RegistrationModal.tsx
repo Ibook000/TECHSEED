@@ -4,6 +4,7 @@ import { CandidateProfile, TechnicalFoundation, TechDirection, REGISTRATION_CONS
 import { PgyMascot } from '../PgyMascot.js';
 
 interface RegistrationModalProps {
+  batchYear: number;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (profile: CandidateProfile, privacyConsentVersion: string) => Promise<void>;
@@ -30,6 +31,7 @@ const DIRECTIONS: TechDirection[] = [
 ];
 
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({
+  batchYear,
   isOpen,
   onClose,
   onSubmit,
@@ -101,7 +103,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           <PgyMascot size="md" variant="badge" className="shrink-0 mt-0.5 scale-90 sm:scale-100 origin-top-left" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:gap-2 font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-amber-700">
-              <span>TECHSEED 2026</span>
+              <span>TECHSEED {batchYear}</span>
               <span>/</span>
               <span className="text-amber-600">学生会技术部</span>
             </div>

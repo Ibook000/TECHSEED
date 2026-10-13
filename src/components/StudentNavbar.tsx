@@ -4,6 +4,7 @@ import { Candidate } from '../types.js';
 import { PgyMascot } from './PgyMascot.js';
 
 interface StudentNavbarProps {
+  batchYear: number;
   candidateSession: Candidate | null;
   onClearCandidateSession: () => void;
   onOpenRegistration: () => void;
@@ -13,6 +14,7 @@ interface StudentNavbarProps {
 }
 
 export const StudentNavbar: React.FC<StudentNavbarProps> = ({
+  batchYear,
   candidateSession,
   onClearCandidateSession,
   onOpenRegistration,
@@ -39,7 +41,7 @@ export const StudentNavbar: React.FC<StudentNavbarProps> = ({
             <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500 tracking-wider">
               <span className="text-amber-600 font-bold">学生会技术部</span>
               <span>·</span>
-              <span>xxxxx学院 2026</span>
+              <span>xxxxx学院 {batchYear}</span>
             </div>
           </div>
         </button>

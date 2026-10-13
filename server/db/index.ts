@@ -396,24 +396,26 @@ class Database {
 
   private seedInitialData() {
     console.log('[DB] Seeding comprehensive initial recruitment dataset...');
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
 
-    const batch2026: RecruitmentBatch = {
-      id: 'batch-2026',
-      name: '2026 技术部秋季新生招新',
-      year: 2026,
+    const currentBatch: RecruitmentBatch = {
+      id: `batch-${currentYear}`,
+      name: `${currentYear} 技术部秋季新生招新`,
+      year: currentYear,
       isActive: true,
-      startDate: '2026-09-01T08:00:00.000Z',
-      description: '面向全校 2026 级本科新生，涵盖前端、后端、AI、硬件与产品设计方向。',
+      startDate: `${currentYear}-09-01T08:00:00.000Z`,
+      description: `面向全校 ${currentYear} 级新生，涵盖前端、后端、AI、硬件与产品设计方向。`,
     };
 
-    const batch2025: RecruitmentBatch = {
-      id: 'batch-2025',
-      name: '2025 技术部招新 (往期归档)',
-      year: 2025,
+    const previousBatch: RecruitmentBatch = {
+      id: `batch-${previousYear}`,
+      name: `${previousYear} 技术部招新 (往期归档)`,
+      year: previousYear,
       isActive: false,
-      startDate: '2025-09-01T08:00:00.000Z',
-      endDate: '2025-10-15T18:00:00.000Z',
-      description: '2025 年度招新档案数据。',
+      startDate: `${previousYear}-09-01T08:00:00.000Z`,
+      endDate: `${previousYear}-10-15T18:00:00.000Z`,
+      description: `${previousYear} 年度招新档案数据。`,
     };
 
     const adminUsers: AdminUser[] = [
@@ -446,7 +448,7 @@ class Database {
     this.data = {
       admin_users: adminUsers,
       admin_session_versions: {},
-      recruitment_batches: [batch2026, batch2025],
+      recruitment_batches: [currentBatch, previousBatch],
       candidates: [],
       interviews: [],
       ai_evaluations: [],

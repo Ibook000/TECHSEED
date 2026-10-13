@@ -155,9 +155,11 @@ export default function App() {
 
   // Batches & Candidates Data (Admin Portal)
   const [batches, setBatches] = useState<RecruitmentBatch[]>([]);
-  const [activeBatchId, setActiveBatchId] = useState<string>('batch-2026');
+  const [activeBatchId, setActiveBatchId] = useState<string>(() => `batch-${new Date().getFullYear()}`);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const activeBatch = batches.find(batch => batch.id === activeBatchId) || batches.find(batch => batch.isActive);
+  const activeBatchYear = activeBatch?.year ?? new Date().getFullYear();
 
   // Modals
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
@@ -451,6 +453,7 @@ export default function App() {
       {/* Dynamic Navbar: Completely separated Student and Admin interfaces */}
       {currentView === 'student' ? (
         <StudentNavbar
+          batchYear={activeBatchYear}
           candidateSession={candidateSession}
           onClearCandidateSession={() => {
             setCandidateSession(null);
@@ -500,6 +503,7 @@ export default function App() {
           <div>
             {studentScreen === 'home' && (
               <StudentHome
+                batchYear={activeBatchYear}
                 onStartRegistration={() => setIsRegistrationOpen(true)}
                 onCheckStatus={() => setIsStatusQueryOpen(true)}
                 onResumeInterview={() => {
@@ -672,7 +676,7 @@ export default function App() {
 
       {/* Footer */}
       <div className="mt-24 border-t border-zinc-200 pt-8 pb-12 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px] text-zinc-500">
-        <div>© 2026 xxxxx学院学生会技术部</div>
+        <div>© {new Date().getFullYear()} xxxxx学院学生会技术部</div>
         <div className="flex items-center gap-3 text-zinc-400 text-[10px]">
           <span className="text-amber-600 font-medium">学生会技术部</span>
           <span>·</span>
@@ -682,6 +686,7 @@ export default function App() {
 
       {/* Modals */}
       <RegistrationModal
+        batchYear={activeBatchYear}
         isOpen={isRegistrationOpen}
         onClose={() => setIsRegistrationOpen(false)}
         onSubmit={handleRegister}

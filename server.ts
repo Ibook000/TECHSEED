@@ -762,7 +762,7 @@ app.get('/api/wechat-qr', (req: Request, res: Response) => {
   if (!isAdminAuthed(req)) {
     return res.status(401).json({ error: '未授权：请登录后再访问后台管理接口' });
   }
-  const targetBatch = batchId ? String(batchId) : (db.getActiveBatch()?.id || 'batch-2026');
+  const targetBatch = batchId ? String(batchId) : (db.getActiveBatch()?.id || `batch-${new Date().getFullYear()}`);
   const qr = db.getWeChatQR(targetBatch);
   res.json(qr || null);
 });

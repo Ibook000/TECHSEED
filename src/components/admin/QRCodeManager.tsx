@@ -151,7 +151,7 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
                 required
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="例如：学生会技术部 2026 招新官方微信群"
+                placeholder={`例如：学生会技术部 ${batches.find(batch => batch.id === selectedBatchId)?.year ?? new Date().getFullYear()} 招新官方微信群`}
                 className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2 text-xs font-mono text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:outline-none shadow-xs"
               />
             </div>

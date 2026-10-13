@@ -16,6 +16,7 @@ import {
 import { TechDirection } from '../../types.js';
 
 interface StudentHomeProps {
+  batchYear: number;
   onStartRegistration: () => void;
   onCheckStatus: () => void;
   onResumeInterview?: () => void;
@@ -34,6 +35,7 @@ const TECH_DIRECTIONS: Array<{ name: TechDirection; icon: any; tag: string; desc
 ];
 
 export const StudentHome: React.FC<StudentHomeProps> = ({
+  batchYear,
   onStartRegistration,
   onCheckStatus,
   onResumeInterview,
@@ -50,7 +52,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
           {/* Status Label */}
           <div className="inline-flex items-center gap-2 rounded-[8px] border border-amber-200 bg-amber-50/70 px-3.5 py-1.5 font-mono text-[11px] text-zinc-800">
             <span className="h-1.5 w-1.5 rounded-full bg-[#EAB308] animate-pulse" />
-            <span className="font-bold text-zinc-900 tracking-wider">TECHSEED 2026</span>
+            <span className="font-bold text-zinc-900 tracking-wider">TECHSEED {batchYear}</span>
             <span className="text-zinc-300">/</span>
             <span>学生会技术部招新</span>
           </div>

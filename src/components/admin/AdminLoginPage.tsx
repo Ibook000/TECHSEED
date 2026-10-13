@@ -184,7 +184,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-zinc-200 bg-white py-4 text-center font-mono text-[11px] text-zinc-500">
-        © 2026 xxxxx学院学生会技术部 · 招新管理后台
+        © {new Date().getFullYear()} xxxxx学院学生会技术部 · 招新管理后台
       </footer>
     </div>
   );
