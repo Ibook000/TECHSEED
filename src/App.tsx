@@ -432,7 +432,7 @@ export default function App() {
   };
 
   // Reset candidate data for the active batch only.
-  const handleClearTestData = async () => {
+  const handleResetActiveBatchData = async () => {
     try {
       if (!activeBatchId) throw new Error('当前批次尚未加载，无法重置数据');
       const res = await fetch('/api/admin/clear-data', {
@@ -522,7 +522,7 @@ export default function App() {
               navigateToView('student');
             }}
             onNavigateToStudent={() => navigateToView('student')}
-            onClearTestData={handleClearTestData}
+            onResetActiveBatchData={handleResetActiveBatchData}
           />
         </Suspense>
       )}

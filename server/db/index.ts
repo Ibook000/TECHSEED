@@ -465,7 +465,7 @@ class Database {
   }
 
   /** Remove candidates and related records from one batch only. */
-  public clearCandidateData(batchId: string): number {
+  public clearCandidateDataForBatch(batchId: string): number {
     const candidateIds = new Set(
       this.data.candidates.filter(candidate => candidate.batchId === batchId).map(candidate => candidate.id)
     );

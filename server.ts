@@ -361,7 +361,7 @@ app.post('/api/upload-logo', (req: Request, res: Response) => {
   }
 });
 
-// Clear/Reset all candidate test data
+// Reset candidate data for one validated batch only.
 app.post('/api/admin/clear-data', (req: Request, res: Response) => {
   try {
     const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
@@ -369,7 +369,7 @@ app.post('/api/admin/clear-data', (req: Request, res: Response) => {
     if (typeof batchId !== 'string' || !db.getBatches().some(batch => batch.id === batchId)) {
       return res.status(400).json({ error: '必须指定一个有效招新批次才能重置数据' });
     }
-    const deletedCount = db.clearCandidateData(batchId);
+    const deletedCount = db.clearCandidateDataForBatch(batchId);
     res.json({ success: true, deletedCount, message: `已清空当前批次的 ${deletedCount} 份候选人档案及关联记录` });
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Candidate data reset', '清空失败，请稍后重试');

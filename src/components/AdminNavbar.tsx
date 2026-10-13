@@ -18,7 +18,7 @@ interface AdminNavbarProps {
   activeBatchName: string;
   onAdminLogout: () => void;
   onNavigateToStudent: () => void;
-  onClearTestData: () => Promise<void>;
+  onResetActiveBatchData: () => Promise<void>;
   onAdminLoginClick?: () => void;
 }
 
@@ -27,7 +27,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
   activeBatchName,
   onAdminLogout,
   onNavigateToStudent,
-  onClearTestData,
+  onResetActiveBatchData,
   onAdminLoginClick,
 }) => {
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
@@ -41,7 +41,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
     setIsClearing(true);
     setClearError('');
     try {
-      await onClearTestData();
+      await onResetActiveBatchData();
       setShowClearConfirm(false);
       setResetConfirmation('');
     } catch (e) {
