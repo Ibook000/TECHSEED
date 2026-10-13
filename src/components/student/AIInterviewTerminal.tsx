@@ -123,7 +123,13 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
         </div>
 
         {/* Messages Stream */}
-        <div className="min-h-[440px] max-h-[580px] overflow-y-auto p-5 sm:p-6 space-y-6 bg-white">
+        <div
+          role="log"
+          aria-label="AI 面试对话记录"
+          aria-live="polite"
+          aria-relevant="additions"
+          className="min-h-[440px] max-h-[580px] overflow-y-auto p-5 sm:p-6 space-y-6 bg-white"
+        >
           {/* Welcome Banner */}
           <div className="rounded-[14px] border border-amber-200/80 bg-amber-50/60 p-4 font-mono text-xs text-zinc-700 leading-relaxed shadow-xs">
             <div className="flex items-start gap-3">
@@ -181,7 +187,7 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
 
           {/* AI Typing indicator */}
           {isLoading && (
-            <div className="flex gap-3 sm:gap-4 items-start">
+            <div role="status" className="flex gap-3 sm:gap-4 items-start">
               <PgyMascot size="xs" variant="badge" className="animate-pulse shrink-0 mt-0.5" />
               <div className="rounded-[14px] border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-500 font-mono flex items-center gap-2 shadow-xs">
                 <RefreshCw className="h-3.5 w-3.5 animate-spin text-[#EAB308]" />
@@ -210,7 +216,9 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
           ) : (
             <div className="space-y-3">
               <div className="relative">
+                <label htmlFor="interview-answer-input" className="sr-only">你的面试回答</label>
                 <textarea
+                  id="interview-answer-input"
                   ref={textareaRef}
                   disabled={isLoading}
                   value={inputText}
@@ -220,9 +228,13 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
                   }}
                   onKeyDown={handleKeyDown}
                   rows={3}
+                  aria-describedby="interview-answer-help"
                   placeholder="具体描述你的思考过程、动手排查细节或实际经验... (Enter 发送，Shift + Enter 换行)"
                   className="w-full resize-none rounded-[12px] border border-zinc-200 bg-white p-3.5 text-xs font-sans text-zinc-900 placeholder-zinc-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 focus:outline-none disabled:opacity-50 shadow-xs"
                 />
+                <span id="interview-answer-help" className="sr-only">
+                  按 Enter 发送回答，按 Shift 加 Enter 换行。
+                </span>
 
                 {submitError && (
                   <p role="alert" className="mt-2 flex items-start gap-1.5 text-[11px] text-rose-700">
@@ -238,7 +250,7 @@ export const AIInterviewTerminal: React.FC<AIInterviewTerminalProps> = ({
                     disabled={!inputText.trim() || isLoading}
                     className="flex items-center gap-1.5 rounded-[8px] bg-[#FACC15] hover:bg-[#EAB308] text-zinc-950 px-4 py-1.5 text-xs font-mono font-bold tracking-wider disabled:opacity-30 transition-colors shadow-xs"
                   >
-                    <Send className="h-3 w-3" />
+                    <Send aria-hidden="true" className="h-3 w-3" />
                     发送回答
                   </button>
                 </div>
