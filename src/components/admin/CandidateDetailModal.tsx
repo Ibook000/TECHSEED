@@ -32,6 +32,7 @@ import {
   InterviewSession,
   AdminUser,
 } from '../../types.js';
+import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 
 interface CandidateDetailModalProps {
   candidateId: string | null;
@@ -46,6 +47,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   currentUser,
   onRefreshList,
 }) => {
+  const modalRef = useModalAccessibility<HTMLDivElement>(Boolean(candidateId), onClose);
   const [activeTab, setActiveTab] = useState<'report' | 'transcript' | 'history'>('report');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
@@ -212,7 +214,14 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-zinc-900/50 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-5xl rounded-[16px] border border-zinc-200 bg-white shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-4 text-zinc-800">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="candidate-detail-title"
+        tabIndex={-1}
+        className="relative w-full max-w-5xl rounded-[16px] border border-zinc-200 bg-white shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-4 text-zinc-800"
+      >
         {/* Header Bar */}
         <div className="flex flex-wrap items-center justify-between border-b border-zinc-200 bg-zinc-50 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -221,8 +230,8 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-zinc-900 font-sans">
-                  {candidate?.profile.name}
+                <h2 id="candidate-detail-title" className="text-lg font-bold text-zinc-900 font-sans">
+                  {candidate?.profile.name || '候选人档案'}
                 </h2>
                 <span className="font-mono text-xs text-zinc-500">
                   [{candidate?.profile.studentId}]
@@ -343,6 +352,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
             <button
               onClick={onClose}
+              aria-label="关闭候选人档案"
               className="rounded-[8px] p-2 text-zinc-400 hover:bg-zinc-200/60 hover:text-zinc-800 transition-colors ml-1 cursor-pointer"
             >
               <X className="h-5 w-5" />
@@ -376,6 +386,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
         <div className="flex border-b border-zinc-200 bg-zinc-50 px-6 font-mono text-xs uppercase tracking-wider">
           <button
             onClick={() => setActiveTab('report')}
+            aria-pressed={activeTab === 'report'}
             className={`flex items-center gap-2 border-b-2 py-3 px-4 transition-all font-mono text-xs font-bold uppercase tracking-wider ${
               activeTab === 'report'
                 ? 'border-amber-500 text-zinc-900 font-bold'
@@ -388,6 +399,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('transcript')}
+            aria-pressed={activeTab === 'transcript'}
             className={`flex items-center gap-2 border-b-2 py-3 px-4 transition-all font-mono text-xs font-bold uppercase tracking-wider ${
               activeTab === 'transcript'
                 ? 'border-amber-500 text-zinc-900 font-bold'
@@ -400,6 +412,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('history')}
+            aria-pressed={activeTab === 'history'}
             className={`flex items-center gap-2 border-b-2 py-3 px-4 transition-all font-mono text-xs font-bold uppercase tracking-wider ${
               activeTab === 'history'
                 ? 'border-amber-500 text-zinc-900 font-bold'
@@ -414,7 +427,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
         {/* Tab Body Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {loading ? (
-            <div className="flex h-64 items-center justify-center font-mono text-xs text-zinc-500">
+            <div role="status" aria-live="polite" className="flex h-64 items-center justify-center font-mono text-xs text-zinc-500">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EAB308] border-t-transparent mr-2" />
               正在加载候选人档案...
             </div>
@@ -608,7 +621,9 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   <FileText className="h-4 w-4 text-amber-600" />
                   <span>添加管理员内部备忘</span>
                 </div>
+                <label htmlFor="candidate-internal-note" className="sr-only">管理员内部备忘</label>
                 <textarea
+                  id="candidate-internal-note"
                   rows={2}
                   value={noteContent}
                   onChange={e => setNoteContent(e.target.value)}
