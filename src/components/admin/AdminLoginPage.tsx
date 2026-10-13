@@ -112,7 +112,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
 
           {/* Security Notice removed */}
           {error && (
-            <div className="mt-4 border border-rose-200 bg-rose-50 rounded-[8px] p-3 text-xs font-mono text-rose-700 flex items-start gap-2">
+            <div role="alert" className="mt-4 border border-rose-200 bg-rose-50 rounded-[8px] p-3 text-xs font-mono text-rose-700 flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -120,12 +120,13 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4 font-mono text-xs">
             <div>
-              <label className="block text-[10px] sm:text-xs uppercase text-zinc-500 tracking-wider mb-1.5 font-semibold">
+              <label htmlFor="admin-login-username" className="block text-[10px] sm:text-xs uppercase text-zinc-500 tracking-wider mb-1.5 font-semibold">
                 管理员账号 (ACCOUNT)
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
                 <input
+                  id="admin-login-username"
                   type="text"
                   required
                   autoFocus
@@ -138,12 +139,13 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] sm:text-xs uppercase text-zinc-500 tracking-wider mb-1.5 font-semibold">
+              <label htmlFor="admin-login-password" className="block text-[10px] sm:text-xs uppercase text-zinc-500 tracking-wider mb-1.5 font-semibold">
                 独立访问密码 (PASSWORD)
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
                 <input
+                  id="admin-login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -154,9 +156,11 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                  aria-pressed={showPassword}
                   className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 text-zinc-400 hover:text-zinc-600"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
                 </button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Shield, Lock, User } from 'lucide-react';
 import { AdminUser } from '../../types.js';
+import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useModalAccessibility<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -52,8 +54,17 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-      <div className="relative w-full max-w-md rounded-[16px] border border-zinc-200 bg-white p-6 shadow-2xl text-zinc-800">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-login-modal-title"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-[16px] border border-zinc-200 bg-white p-6 shadow-2xl text-zinc-800"
+      >
         <button
+          type="button"
+          aria-label="关闭"
           onClick={onClose}
           className="absolute right-4 top-4 rounded-[6px] p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
         >
@@ -65,23 +76,24 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             <Shield className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-zinc-900 font-mono uppercase tracking-wider">学生会技术部管理员登录</h3>
+            <h3 id="admin-login-modal-title" className="text-sm font-bold text-zinc-900 font-mono uppercase tracking-wider">学生会技术部管理员登录</h3>
             <p className="text-[11px] text-zinc-500 font-mono mt-0.5">仅供学生会技术部招新工作组成员登录管理控制台</p>
           </div>
         </div>
 
         {error && (
-          <div className="mt-4 rounded-[8px] border border-rose-200 bg-rose-50 p-3 text-xs font-mono text-rose-700">
+          <div role="alert" className="mt-4 rounded-[8px] border border-rose-200 bg-rose-50 p-3 text-xs font-mono text-rose-700">
             {error}
           </div>
         )}
 
         <form onSubmit={handleLogin} className="mt-5 space-y-3.5 font-mono text-xs">
           <div>
-            <label className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">账号 ACCOUNT</label>
+            <label htmlFor="admin-login-modal-username" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">账号 ACCOUNT</label>
             <div className="relative">
               <User className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <input
+                id="admin-login-modal-username"
                 type="text"
                 required
                 value={username}
@@ -93,10 +105,11 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">密码 PASSWORD</label>
+            <label htmlFor="admin-login-modal-password" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">密码 PASSWORD</label>
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <input
+                id="admin-login-modal-password"
                 type="password"
                 required
                 value={password}

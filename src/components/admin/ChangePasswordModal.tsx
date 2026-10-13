@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Lock, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
 import { AdminUser } from '../../types.js';
 import { saveAdminToken } from '../../lib/auth.js';
+import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 import {
   getAdminPasswordPolicyError,
   MAX_ADMIN_PASSWORD_LENGTH,
@@ -25,6 +26,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const dialogRef = useModalAccessibility<HTMLDivElement>(isOpen && Boolean(adminUser), onClose);
 
   if (!isOpen || !adminUser) return null;
 
@@ -80,8 +82,17 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-      <div className="relative w-full max-w-md rounded-[16px] border border-zinc-200 bg-white p-6 shadow-2xl text-zinc-800">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-password-modal-title"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-[16px] border border-zinc-200 bg-white p-6 shadow-2xl text-zinc-800"
+      >
         <button
+          type="button"
+          aria-label="关闭"
           onClick={onClose}
           className="absolute right-4 top-4 p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 rounded-[6px] transition-colors"
         >
@@ -93,7 +104,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             <KeyRound className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-zinc-900 font-mono uppercase tracking-wider">
+            <h3 id="change-password-modal-title" className="text-sm font-bold text-zinc-900 font-mono uppercase tracking-wider">
               修改后台独立访问密码
             </h3>
             <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
@@ -103,14 +114,14 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         </div>
 
         {error && (
-          <div className="mt-4 border border-rose-200 bg-rose-50 rounded-[8px] p-3 text-xs font-mono text-rose-700 flex items-start gap-2">
+          <div role="alert" className="mt-4 border border-rose-200 bg-rose-50 rounded-[8px] p-3 text-xs font-mono text-rose-700 flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mt-4 border border-amber-300 bg-amber-50 rounded-[8px] p-3 text-xs font-mono text-amber-900 flex items-start gap-2">
+          <div role="status" className="mt-4 border border-amber-300 bg-amber-50 rounded-[8px] p-3 text-xs font-mono text-amber-900 flex items-start gap-2">
             <CheckCircle2 className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <span>{success}</span>
           </div>
@@ -118,12 +129,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-3.5 font-mono text-xs">
           <div>
-            <label className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
+            <label htmlFor="current-admin-password" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
               当前原密码 (CURRENT PASSWORD)
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <input
+                id="current-admin-password"
                 type="password"
                 required
                 value={oldPassword}
@@ -135,12 +147,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
-              设置新密码 (NEW PASSWORD, 至少6位)
+            <label htmlFor="new-admin-password" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
+              设置新密码 (NEW PASSWORD, 至少12位)
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <input
+                id="new-admin-password"
                 type="password"
                 required
                 minLength={MIN_ADMIN_PASSWORD_LENGTH}
@@ -154,12 +167,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
+            <label htmlFor="confirm-admin-password" className="block text-[10px] uppercase text-zinc-500 tracking-wider mb-1 font-semibold">
               确认新密码 (CONFIRM NEW PASSWORD)
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <input
+                id="confirm-admin-password"
                 type="password"
                 required
                 value={confirmPassword}
