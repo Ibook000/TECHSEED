@@ -155,7 +155,7 @@ export default function App() {
 
   // Batches & Candidates Data (Admin Portal)
   const [batches, setBatches] = useState<RecruitmentBatch[]>([]);
-  const [activeBatchId, setActiveBatchId] = useState<string>(() => `batch-${new Date().getFullYear()}`);
+  const [activeBatchId, setActiveBatchId] = useState<string>('');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const activeBatch = batches.find(batch => batch.id === activeBatchId) || batches.find(batch => batch.isActive);
@@ -199,6 +199,7 @@ export default function App() {
       setStats(null);
       return;
     }
+    if (!batchId) return;
     try {
       const [candRes, statsRes] = await Promise.all([
         fetch(`/api/candidates?batchId=${batchId}`),
