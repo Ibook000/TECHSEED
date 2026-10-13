@@ -431,24 +431,32 @@ export default function App() {
     }
   };
 
-  // Reset All Candidate Data (Database cleanup)
+  // Reset candidate data for the active batch only.
   const handleClearTestData = async () => {
     try {
-      const res = await fetch('/api/admin/clear-data', { method: 'POST' });
+      if (!activeBatchId) throw new Error('当前批次尚未加载，无法重置数据');
+      const res = await fetch('/api/admin/clear-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchId: activeBatchId }),
+      });
       if (!res.ok) {
-        throw new Error('数据重置失败');
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || '数据重置失败');
       }
       setCandidates([]);
-      setCandidateSession(null);
-      setActiveInterview(null);
-      setStudentScreen('home');
-      setRecentStudentId(null);
-      setRecentCandidateName(null);
-      try {
-        localStorage.removeItem('tech_last_student_id');
-        localStorage.removeItem('tech_last_candidate_name');
-      } catch (e) {}
-      clearStudentSession();
+      if (candidateSession?.batchId === activeBatchId) {
+        setCandidateSession(null);
+        setActiveInterview(null);
+        setStudentScreen('home');
+        setRecentStudentId(null);
+        setRecentCandidateName(null);
+        try {
+          localStorage.removeItem('tech_last_student_id');
+          localStorage.removeItem('tech_last_candidate_name');
+        } catch (e) {}
+        clearStudentSession();
+      }
       await loadCandidatesAndStats(activeBatchId);
     } catch (err: any) {
       console.error('Failed to reset candidate database:', err);
@@ -505,6 +513,7 @@ export default function App() {
         <Suspense fallback={<div className="h-16 border-b border-zinc-200 bg-white" />}>
           <AdminNavbar
             adminUser={adminUser}
+            activeBatchName={activeBatch?.name || ''}
             onAdminLogout={() => {
               setAdminUser(null);
               clearAdminSession();

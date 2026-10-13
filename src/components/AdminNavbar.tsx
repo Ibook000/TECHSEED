@@ -15,6 +15,7 @@ import { ChangePasswordModal } from './admin/ChangePasswordModal.js';
 
 interface AdminNavbarProps {
   adminUser: AdminUser | null;
+  activeBatchName: string;
   onAdminLogout: () => void;
   onNavigateToStudent: () => void;
   onClearTestData: () => Promise<void>;
@@ -23,6 +24,7 @@ interface AdminNavbarProps {
 
 export const AdminNavbar: React.FC<AdminNavbarProps> = ({
   adminUser,
+  activeBatchName,
   onAdminLogout,
   onNavigateToStudent,
   onClearTestData,
@@ -32,14 +34,19 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [resetConfirmation, setResetConfirmation] = useState('');
+  const [clearError, setClearError] = useState('');
 
   const handleConfirmClear = async () => {
     setIsClearing(true);
+    setClearError('');
     try {
       await onClearTestData();
       setShowClearConfirm(false);
+      setResetConfirmation('');
     } catch (e) {
       console.error(e);
+      setClearError(e instanceof Error ? e.message : '数据重置失败，请重试');
     } finally {
       setIsClearing(false);
     }
@@ -72,8 +79,8 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
             {/* Clear Testing Data Button */}
             <button
               id="btn-clear-test-data"
-              onClick={() => setShowClearConfirm(true)}
-              title="清空当前所有候选人档案与初筛答卷，恢复初始就绪状态"
+              onClick={() => { setClearError(''); setResetConfirmation(''); setShowClearConfirm(true); }}
+              title="清空当前招新批次的候选人档案与初筛答卷"
               className="flex items-center gap-1.5 rounded-[10px] border border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-zinc-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all shadow-xs"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -154,28 +161,37 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
           <div className="w-full max-w-md rounded-[16px] border border-rose-200 bg-white p-6 shadow-2xl font-mono text-zinc-800">
             <div className="flex items-center gap-3 text-rose-600">
               <AlertTriangle className="h-6 w-6 shrink-0" />
-              <h3 className="text-base font-bold text-zinc-950 uppercase">确认重置候选人数据库？</h3>
+              <h3 className="text-base font-bold text-zinc-950 uppercase">确认重置当前批次？</h3>
             </div>
             <p className="mt-4 text-xs text-zinc-600 leading-relaxed">
-              此操作将清空当前批次所有已报名的学生档案、AI 面试记录、多维评估画像报告及复试备注。
+              作用范围：<strong className="text-zinc-900">{activeBatchName || '当前未选择批次'}</strong>。此操作会删除该批次全部学生档案、AI 面试记录、评估报告、复试备注和状态历史，不能撤销。
             </p>
-            <p className="mt-2 text-xs text-emerald-700 leading-relaxed">
-              ✓ 管理员账号、招新批次设置、微信群二维码及 AI 提示词配置将完好保留。
+            <p className="mt-2 text-xs text-zinc-600 leading-relaxed">
+              其他批次、管理员账号、批次设置、微信群二维码及 AI 提示词不会受影响。执行前请确认已有可用备份。
             </p>
-            <p className="mt-2 text-[11px] text-zinc-400">
-              重置后，招新系统将恢复就绪状态，迎接大一新生正式报名与初筛。
-            </p>
+            <label htmlFor="reset-batch-confirmation" className="mt-4 block text-xs font-semibold text-zinc-700">
+              输入“重置”确认
+            </label>
+            <input
+              id="reset-batch-confirmation"
+              value={resetConfirmation}
+              onChange={event => setResetConfirmation(event.target.value)}
+              disabled={isClearing}
+              className="mt-1.5 w-full rounded-[8px] border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+              autoComplete="off"
+            />
+            {clearError && <p role="alert" className="mt-3 rounded-[8px] bg-rose-50 px-3 py-2 text-xs text-rose-700">{clearError}</p>}
 
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 disabled={isClearing}
-                onClick={() => setShowClearConfirm(false)}
+                onClick={() => { setShowClearConfirm(false); setResetConfirmation(''); }}
                 className="rounded-[8px] border border-zinc-200 px-4 py-2 text-xs text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50 shadow-xs"
               >
                 取消
               </button>
               <button
-                disabled={isClearing}
+                disabled={isClearing || resetConfirmation.trim() !== '重置' || !activeBatchName}
                 onClick={handleConfirmClear}
                 className="rounded-[8px] border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors flex items-center gap-1.5 shadow-xs"
               >
@@ -187,7 +203,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
                 ) : (
                   <>
                     <Trash2 className="h-3.5 w-3.5" />
-                    <span>确认立即清空</span>
+                    <span>确认清空此批次</span>
                   </>
                 )}
               </button>

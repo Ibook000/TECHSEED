@@ -464,19 +464,23 @@ class Database {
     console.log('[DB] Initialized clean database with 0 candidate records for user testing.');
   }
 
-  /**
-   * Reset and clear all candidate testing data
-   */
-  public clearCandidateData(): void {
-    this.data.candidates = [];
-    this.data.interviews = [];
-    this.data.ai_evaluations = [];
-    this.data.manual_reviews = [];
-    this.data.candidate_notes = [];
-    this.data.candidate_status_history = [];
-    this.data.student_access_tokens = {};
+  /** Remove candidates and related records from one batch only. */
+  public clearCandidateData(batchId: string): number {
+    const candidateIds = new Set(
+      this.data.candidates.filter(candidate => candidate.batchId === batchId).map(candidate => candidate.id)
+    );
+    this.data.candidates = this.data.candidates.filter(candidate => candidate.batchId !== batchId);
+    this.data.interviews = this.data.interviews.filter(record => !candidateIds.has(record.candidateId));
+    this.data.ai_evaluations = this.data.ai_evaluations.filter(record => !candidateIds.has(record.candidateId));
+    this.data.manual_reviews = this.data.manual_reviews.filter(record => !candidateIds.has(record.candidateId));
+    this.data.candidate_notes = this.data.candidate_notes.filter(record => !candidateIds.has(record.candidateId));
+    this.data.candidate_status_history = this.data.candidate_status_history.filter(record => !candidateIds.has(record.candidateId));
+    for (const candidateId of candidateIds) {
+      delete this.data.student_access_tokens?.[candidateId];
+    }
     this.save();
-    console.log('[DB] All candidate testing records cleared.');
+    console.log(`[DB] Cleared ${candidateIds.size} candidate record(s) from batch ${batchId}.`);
+    return candidateIds.size;
   }
 
   // --- CRUD API Methods ---

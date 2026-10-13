@@ -364,8 +364,13 @@ app.post('/api/upload-logo', (req: Request, res: Response) => {
 // Clear/Reset all candidate test data
 app.post('/api/admin/clear-data', (req: Request, res: Response) => {
   try {
-    db.clearCandidateData();
-    res.json({ success: true, message: '测试数据已全部清空，您可以从新生端开始全新测试！' });
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+    const { batchId } = body;
+    if (typeof batchId !== 'string' || !db.getBatches().some(batch => batch.id === batchId)) {
+      return res.status(400).json({ error: '必须指定一个有效招新批次才能重置数据' });
+    }
+    const deletedCount = db.clearCandidateData(batchId);
+    res.json({ success: true, deletedCount, message: `已清空当前批次的 ${deletedCount} 份候选人档案及关联记录` });
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Candidate data reset', '清空失败，请稍后重试');
   }
