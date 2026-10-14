@@ -14,17 +14,17 @@
     "clean": "node scripts/clean.mjs",
     "lint": "tsc --noEmit",
     "audit": "npm audit --audit-level=moderate",
-    "test": "node --import tsx --test tests/evaluation.test.ts tests/manualReview.test.ts tests/passwordPolicy.test.ts"
+    "test": "node --import tsx --test tests/evaluation.test.ts tests/manualReview.test.ts tests/routeParams.test.ts tests/express5Routes.test.ts tests/passwordPolicy.test.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.7",
-    "express": "^4.21.2"
+    "express": "^5.3.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/express": "^4.17.21",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

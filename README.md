@@ -78,7 +78,7 @@ npm run dev
 npm run dev     # 开发模式（tsx server.ts，端口 3000）
 npm run build   # 构建产物：vite build + esbuild 打包 server.ts -> dist/server.cjs
 npm run start   # 以 production 模式运行构建产物（先执行 npm run build）
-npm test        # 运行评分、隐私脱敏与密码策略单元测试
+npm test        # 运行评分、隐私脱敏、审核结果、路由参数与 Express 路由单元测试
 npm run lint    # TypeScript 类型检查（tsc --noEmit）
 npm run audit   # 检查已知依赖漏洞（npm audit）
 npm run clean   # 清理构建产物
@@ -238,4 +238,4 @@ npm run audit
 npm run build
 ```
 
-当前单元测试覆盖评分边界、规则评分证据门槛、空面试拦截、已知身份信息脱敏、管理员密码策略和人工审核结果校验。HTTP 接口、数据库迁移及部署环境仍需要补充端到端验证后，再用于真实报名数据。
+当前单元测试覆盖评分边界、规则评分证据门槛、空面试拦截、已知身份信息脱敏、管理员密码策略、人工审核结果校验、路由参数校验和 Express 路由冒烟测试。HTTP 接口、数据库迁移及部署环境仍需要补充端到端验证后，再用于真实报名数据。
