@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { db } from './server/db/index.js';
 import { RecruitmentService } from './server/services/recruitment.js';
+import { isManualReviewResult } from './server/services/manualReview.js';
 import { HttpError } from './server/errors.js';
 import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION } from './src/types.js';
 import { getAdminPasswordPolicyError } from './src/lib/passwordPolicy.js';
@@ -627,7 +628,11 @@ app.post('/api/candidates/:id/reject', (req: Request, res: Response) => {
 // Legacy manual-review route (alias to admit / reject for compatibility)
 app.post('/api/candidates/:id/manual-review', (req: Request, res: Response) => {
   try {
-    const { result, reviewerName, overallEvaluation } = req.body;
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+    const { result, reviewerName, overallEvaluation } = body;
+    if (!isManualReviewResult(result)) {
+      return res.status(400).json({ error: '审核结果无效，仅支持 PASSED 或 REJECTED' });
+    }
     if (result === 'PASSED') {
       const cand = RecruitmentService.admitCandidate(req.params.id, reviewerName || 'admin', overallEvaluation);
       return res.json({ candidate: cand });

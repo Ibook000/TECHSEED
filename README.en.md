@@ -70,7 +70,7 @@ npm run backup  # Create a database snapshot
 
 ## Tests
 
-The current unit tests cover score validation and grade boundaries, evidence-based heuristic scoring, empty-interview rejection, identifier redaction, and the admin password policy. HTTP routes, database migrations, and deployment environments still need broader integration coverage before using real applicant data.
+The current unit tests cover score validation and grade boundaries, evidence-based heuristic scoring, empty-interview rejection, identifier redaction, admin password policy, and manual-review decision validation. HTTP routes, database migrations, and deployment environments still need broader integration coverage before using real applicant data.
 
 ## AI configuration
 
