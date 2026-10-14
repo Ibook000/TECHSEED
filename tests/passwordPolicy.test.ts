@@ -17,7 +17,7 @@ test('enforces password length and rejects all-whitespace values', () => {
   assert.equal(isAdminPasswordValid('a'.repeat(MIN_ADMIN_PASSWORD_LENGTH - 1)), false);
   assert.equal(isAdminPasswordValid('a'.repeat(MAX_ADMIN_PASSWORD_LENGTH + 1)), false);
   assert.equal(isAdminPasswordValid(' '.repeat(MIN_ADMIN_PASSWORD_LENGTH)), false);
-  assert.match(getAdminPasswordPolicyError('short'), /至少需要 12 个字符/);
+  assert.match(getAdminPasswordPolicyError('short') ?? '', /至少需要 12 个字符/);
   assert.match(getAdminPasswordPolicyError(' '.repeat(MIN_ADMIN_PASSWORD_LENGTH)) ?? '', /不能只包含空白字符/);
   assert.equal(getAdminPasswordPolicyError('a'.repeat(MIN_ADMIN_PASSWORD_LENGTH)), null);
 });
