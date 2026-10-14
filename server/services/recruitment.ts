@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '../db/index.js';
 import { HttpError } from '../errors.js';
+import { hasCandidateAnswers } from './evaluation.js';
 import {
   Candidate,
   CandidateStatus,
@@ -224,6 +225,10 @@ export class RecruitmentService {
         return { interview, evaluation, isCompleted: true };
       }
       // Interview marked completed but evaluation missing — re-run evaluation
+    }
+
+    if (!hasCandidateAnswers(interview.messages)) {
+      throw new HttpError('当前面试还没有候选人回答，暂时不能生成评估', 409);
     }
 
     const now = new Date().toISOString();

@@ -78,12 +78,13 @@ npm run dev
 npm run dev     # 开发模式（tsx server.ts，端口 3000）
 npm run build   # 构建产物：vite build + esbuild 打包 server.ts -> dist/server.cjs
 npm run start   # 以 production 模式运行构建产物（先执行 npm run build）
+npm test        # 运行评分、隐私脱敏与密码策略单元测试
 npm run lint    # TypeScript 类型检查（tsc --noEmit）
 npm run audit   # 检查已知依赖漏洞（npm audit）
 npm run clean   # 清理构建产物
 ```
 
-推送到 `main` 或提交 Pull Request 时，GitHub Actions 会在 Node.js 22 和 24 上执行依赖审计、类型检查与生产构建，并用 CodeQL 扫描 TypeScript/JavaScript 与 Actions 工作流。
+推送到 `main` 或提交 Pull Request 时，GitHub Actions 会在 Node.js 22 和 24 上执行依赖审计、单元测试、类型检查与生产构建，并用 CodeQL 扫描 TypeScript/JavaScript 与 Actions 工作流。
 
 ## 参与贡献
 
@@ -228,12 +229,13 @@ pm2 reload ecosystem.config.cjs --update-env
 
 ## 验证
 
-本地可运行类型检查和生产构建：
+本地可运行单元测试、类型检查和生产构建：
 
 ```bash
+npm test
 npm run lint
 npm run audit
 npm run build
 ```
 
-当前项目尚未建立自动化单元测试。招新核心流程、数据迁移与权限边界仍需要补齐独立测试后，再考虑面向真实报名数据的生产部署。
+当前单元测试覆盖评分边界、规则评分证据门槛、空面试拦截、已知身份信息脱敏和管理员密码策略。HTTP 接口、数据库迁移及部署环境仍需要补充端到端验证后，再用于真实报名数据。
