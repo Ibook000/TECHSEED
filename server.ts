@@ -677,6 +677,7 @@ app.post('/api/candidates/:id/join-confirm', (req: Request, res: Response) => {
   if (!requireStudentOrAdmin(req, res, normalizeRouteParam(req.params.id))) return;
   try {
     const candidate = RecruitmentService.confirmGroupJoin(normalizeRouteParam(req.params.id));
+    if (!candidate) return res.status(404).json({ error: '候选人不存在' });
     res.json({ success: true, candidate: redactCandidate(candidate) });
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Group join confirmation', '入群确认失败，请稍后重试');

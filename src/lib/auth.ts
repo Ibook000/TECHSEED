@@ -144,7 +144,7 @@ function isSameOriginApiRequest(url: string): boolean {
 export function installFetchAuth(): void {
   const originalFetch = window.fetch.bind(window);
 
-  window.fetch = (input: RequestInfo | URL, init: RequestInit = {}) => {
+  window.fetch = async (input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> => {
     const url = requestUrl(input);
     const adminToken = getAdminToken();
     const studentToken = getStudentAccessToken();
@@ -155,7 +155,7 @@ export function installFetchAuth(): void {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
       if (adminToken) headers.set('Authorization', `Bearer ${adminToken}`);
       if (studentToken) headers.set('X-Student-Token', studentToken);
-      const response = originalFetch(input, { ...init, headers });
+      const response = await originalFetch(input, { ...init, headers });
       return adminToken ? withAuthExpiryCheck(response, url) : response;
     }
 

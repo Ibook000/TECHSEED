@@ -451,8 +451,8 @@ export default function App() {
         setCandidateSession(null);
         setActiveInterview(null);
         setStudentScreen('home');
-        setRecentStudentId(null);
-        setRecentCandidateName(null);
+        setRecentStudentId('');
+        setRecentCandidateName('');
         removeStoredValue('tech_last_student_id');
         removeStoredValue('tech_last_candidate_name');
         clearStudentSession();
@@ -489,8 +489,8 @@ export default function App() {
             setCandidateSession(null);
             setActiveInterview(null);
             setStudentScreen('home');
-            setRecentStudentId(null);
-            setRecentCandidateName(null);
+            setRecentStudentId('');
+            setRecentCandidateName('');
             removeStoredValue('tech_last_student_id');
             removeStoredValue('tech_last_candidate_name');
             clearStudentSession();
