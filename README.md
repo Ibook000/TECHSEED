@@ -86,6 +86,10 @@ npm run clean   # 清理构建产物
 
 推送到 `main` 或提交 Pull Request 时，GitHub Actions 会在 Node.js 22 和 24 上执行依赖审计、单元测试、类型检查与生产构建，并用 CodeQL 扫描 TypeScript/JavaScript 与 Actions 工作流。
 
+## 接口文档
+
+二次开发可参考 [API 接口说明](docs/API.md)，查看管理员与学生端认证方式、接口列表和主要请求字段。
+
 ## 参与贡献
 
 欢迎提交问题反馈和 Pull Request。首次贡献请先阅读[贡献指南](CONTRIBUTING.md)；安全问题请参考[安全政策](SECURITY.md)。
