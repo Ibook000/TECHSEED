@@ -13,7 +13,8 @@
     "backup": "node scripts/backup-db.mjs",
     "clean": "node scripts/clean.mjs",
     "lint": "tsc --noEmit",
-    "audit": "npm audit --audit-level=moderate"
+    "audit": "npm audit --audit-level=moderate",
+    "test": "node --import tsx --test tests/evaluation.test.ts tests/passwordPolicy.test.ts"
   },
   "dependencies": {
     "dotenv": "^17.2.3",

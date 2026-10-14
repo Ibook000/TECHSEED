@@ -33,6 +33,9 @@ jobs:
       - name: Check dependency advisories
         run: npm run audit
 
+      - name: Run unit tests
+        run: npm test
+
       - name: Typecheck
         run: npm run lint
 

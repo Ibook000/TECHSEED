@@ -1,5 +1,14 @@
-import { CandidateProfile, InterviewMessage, AIEvaluation, AIRecommendationGrade, CapabilityScores } from '../../src/types.js';
+import { CandidateProfile, InterviewMessage, AIEvaluation, CapabilityScores } from '../../src/types.js';
 import { db } from '../db/index.js';
+import {
+  calculateOverallScore,
+  createHeuristicEvaluation,
+  gradeForScore,
+  hasCandidateAnswers,
+  readOptionalScore,
+  readRequiredScore,
+  redactKnownProfileIdentifiers,
+} from './evaluation.js';
 
 /**
  * Simple concurrency limiter for LLM calls.
@@ -171,36 +180,6 @@ function cleanJsonString(raw: string): string {
   return cleaned.trim();
 }
 
-function readRequiredScore(value: unknown): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    throw new Error('Evaluation response contains a missing or invalid capability score.');
-  }
-  return Math.round(Math.min(100, Math.max(0, value)));
-}
-
-function readOptionalScore(value: unknown, fallback = 50): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
-  return Math.round(Math.min(100, Math.max(0, value)));
-}
-
-function calculateOverallScore(scores: CapabilityScores): number {
-  return Math.round(
-    scores.learning * 0.25 +
-    scores.initiative * 0.20 +
-    scores.logic * 0.20 +
-    scores.technology_interest * 0.15 +
-    scores.communication * 0.10 +
-    scores.technical_foundation * 0.10
-  );
-}
-
-function gradeForScore(score: number): AIRecommendationGrade {
-  if (score >= 90) return 'S';
-  if (score >= 80) return 'A';
-  if (score >= 70) return 'B';
-  return 'C';
-}
-
 function readStringList(value: unknown, fallback: string[]): string[] {
   if (!Array.isArray(value)) return fallback;
   const items = value
@@ -209,37 +188,6 @@ function readStringList(value: unknown, fallback: string[]): string[] {
     .filter(Boolean)
     .slice(0, 8);
   return items.length > 0 ? items : fallback;
-}
-
-function redactKnownProfileIdentifiers(text: string, profile: CandidateProfile): string {
-  const identifiers = new Set<string>();
-  const profileValues = [
-    profile.name,
-    profile.studentId,
-    profile.major,
-    profile.className,
-    profile.phone,
-    profile.wechat,
-  ];
-
-  for (const value of profileValues) {
-    if (typeof value !== 'string') continue;
-    const trimmed = value.trim();
-    if (!trimmed || Array.from(trimmed).length < 2) continue;
-    identifiers.add(trimmed);
-
-    const compact = trimmed.replace(/[\s()+.\-]/g, '');
-    if (Array.from(compact).length >= 2) identifiers.add(compact);
-  }
-
-  return [...identifiers]
-    .sort((left, right) => right.length - left.length)
-    .reduce((redacted, identifier) => {
-      const pattern = Array.from(identifier)
-        .map(char => char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .join('[\\s()+.\\-]*');
-      return redacted.replace(new RegExp(pattern, 'giu'), '[已隐藏]');
-    }, text);
 }
 
 interface OpenAIChatMessage {
@@ -626,6 +574,10 @@ ${conversationHistory}
     profile: CandidateProfile,
     messages: InterviewMessage[]
   ): Promise<AIEvaluation> {
+    if (!hasCandidateAnswers(messages)) {
+      throw new Error('Cannot evaluate an interview without a candidate answer.');
+    }
+
     const candidateConversation = messages
       .map(m => `${m.sender === 'ai' ? '面试官' : '候选人'}: ${redactKnownProfileIdentifiers(m.content, profile)}`)
       .join('\n\n');
@@ -733,118 +685,6 @@ ${candidateConversation}
     }
 
     // Conservative heuristic fallback when a usable LLM evaluation is unavailable.
-    const candAnswers = messages.filter(m => m.sender === 'candidate').map(m => m.content);
-    const hasDetailedEvidence = candAnswers.some(a => /因为|后来|排查|报错|配置|文档|日志|查了|试过|定位|对比/.test(a));
-    const hasLearningEvidence = candAnswers.some(a => /搜索|查阅|文档|教程|请教|尝试|学习|研究|排查/.test(a));
-    const hasActionEvidence = candAnswers.some(a => /动手|写了|做了|搭建|配置|调试|安装|部署|使用|实现|项目|修改/.test(a));
-    const hasReasoningEvidence = candAnswers.some(a => /因为|所以|发现|判断|定位|对比|尝试|后来|结果|原因|解决/.test(a));
-    const hasFoundation = profile.technicalFoundation !== '完全没有';
-
-    // Mark only clearly unreadable records as insufficient information. This
-    // flag is a prompt for manual follow-up, never a rejection decision.
-    function isInvalidAnswer(text: string): boolean {
-      if (!text || text.trim().length < 2) return true;
-      const clean = text.replace(/[\s\n\r]/g, '');
-      if (clean.length < 3) return true;
-      // Count most frequent single character
-      const charCounts: Record<string, number> = {};
-      for (const ch of clean) charCounts[ch] = (charCounts[ch] || 0) + 1;
-      const topCount = Math.max(...Object.values(charCounts));
-      const topRatio = topCount / clean.length;
-      if (topRatio > 0.6 && clean.length > 5) return true; // dominated by a single character (e.g. "qqqqqq...")
-      // Accept letters from any writing system; do not assume Chinese or English.
-      if (!/\p{L}{2,}/u.test(clean)) return true; // only numbers, symbols, or isolated letters
-      return false;
-    }
-
-    const allInvalid = candAnswers.length > 0 && candAnswers.every(a => isInvalidAnswer(a));
-
-    if (allInvalid) {
-      const invalidScores: CapabilityScores = {
-        learning: 30,
-        initiative: 30,
-        logic: 30,
-        technology_interest: 30,
-        communication: 30,
-        technical_foundation: 20,
-      };
-      return {
-        id: `eval-${Date.now()}`,
-        candidateId,
-        overallScore: calculateOverallScore(invalidScores),
-        recommendation: gradeForScore(calculateOverallScore(invalidScores)),
-        candidateType: '信息不足 · 建议核对记录',
-        scores: invalidScores,
-        quality: {
-          authenticity_score: 50,
-          specificity_score: 50,
-          consistency_score: 50,
-        },
-        strengths: [
-          '当前记录无法提供可核实的面试回答证据',
-          '报名时填写的方向可供管理员后续沟通时参考',
-        ],
-        risks: [
-          '面试记录中没有可读的回答内容，可能与误触、输入设备或提交链路有关',
-          '现有记录不足以评估候选人的能力、兴趣或沟通表现',
-        ],
-        summary: `${profile.name}同学的当前面试记录缺少可读回答，无法据此评估真实能力。原因可能包括误触、输入设备或提交链路问题；建议管理员先核对记录，并联系候选人确认是否需要更换设备或安排补面。此分数仅用于标记“信息不足”，不代表能力判断。`,
-        recommendationReason: '请先核验提交记录并联系候选人，确认是否需要更换设备、补充回答或安排补面；不据此作淘汰判断。',
-        antiTemplateFlag: false,
-        templateAnalysis: `记录中有${candAnswers.length}条候选人回答，但当前内容不可读；无法判断原因或真实性，建议先核对提交链路并联系候选人。`,
-        evaluationSource: 'heuristic',
-        evaluatedAt: new Date().toISOString(),
-      };
-    }
-
-    // The fallback has no semantic model. Keep scores near neutral and only
-    // adjust dimensions when answers contain simple, observable clues.
-    const learning = hasLearningEvidence ? 80 : 70;
-    const initiative = hasActionEvidence ? 80 : 70;
-    const logic = hasReasoningEvidence ? 80 : 70;
-    const interest = 70; // A selected direction alone does not prove sustained interest.
-    const comm = 70; // Never infer communication ability from answer length.
-    const foundation = hasFoundation ? 70 : 65;
-    const scores: CapabilityScores = {
-      learning,
-      initiative,
-      logic,
-      technology_interest: interest,
-      communication: comm,
-      technical_foundation: foundation,
-    };
-    const overallScore = calculateOverallScore(scores);
-    const rec = gradeForScore(overallScore);
-
-    return {
-      id: `eval-${Date.now()}`,
-      candidateId,
-      overallScore,
-      recommendation: rec,
-      candidateType: '规则评分 · 需人工复核',
-      scores,
-      quality: {
-        authenticity_score: 50,
-        specificity_score: hasDetailedEvidence ? 70 : 50,
-        consistency_score: 50,
-      },
-      strengths: [
-        hasLearningEvidence ? '回答提到查找资料、学习或排查的线索' : '当前规则未识别到明确的学习过程线索',
-        hasActionEvidence ? '回答提到动手尝试或实际操作的线索' : '当前规则未识别到明确的实践过程线索',
-        hasReasoningEvidence ? '回答提到原因、步骤或结果的线索' : '请人工结合完整问答补充判断',
-      ],
-      risks: [
-        '当前为规则评分，不能理解语义，也不能可靠判断学习潜力或沟通能力',
-        '请管理员核对完整问答；必要时安排人工追问',
-      ],
-      summary: `${profile.name}同学的报告由简单规则生成，只能展示部分关键词线索，不能代表候选人真实能力或适合度。请管理员查看完整问答并进行人工复核。`,
-      recommendationReason: '规则评分无法替代语义评估。建议人工核对回答中提到的具体经历、学习过程和未明确的信息，再独立作出决定。',
-      antiTemplateFlag: false,
-      templateAnalysis: hasDetailedEvidence
-        ? '回答中出现具体步骤或经历线索；本规则无法判断真实性。'
-        : '具体经历信息有限；不据此判断套话、诚信或兴趣，请人工追问。',
-      evaluationSource: 'heuristic',
-      evaluatedAt: new Date().toISOString(),
-    };
+    return createHeuristicEvaluation(candidateId, profile, messages);
   }
 }

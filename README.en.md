@@ -60,12 +60,17 @@ Open <http://localhost:3000>. The admin console is at <http://localhost:3000/adm
 Useful commands:
 
 ```bash
+npm test        # Run scoring, privacy-redaction, and password-policy unit tests
 npm run lint    # TypeScript type check
 npm run audit   # Check dependency advisories
 npm run build   # Build the frontend and production server
 npm run start   # Start the production build
 npm run backup  # Create a database snapshot
 ```
+
+## Tests
+
+The current unit tests cover score validation and grade boundaries, evidence-based heuristic scoring, empty-interview rejection, identifier redaction, and the admin password policy. HTTP routes, database migrations, and deployment environments still need broader integration coverage before using real applicant data.
 
 ## AI configuration
 
