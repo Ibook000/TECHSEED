@@ -6,6 +6,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { db } from './server/db/index.js';
 import { RecruitmentService } from './server/services/recruitment.js';
 import { isManualReviewResult } from './server/services/manualReview.js';
+import { normalizeRouteParam } from './server/services/routeParams.js';
 import { HttpError } from './server/errors.js';
 import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION } from './src/types.js';
 import { getAdminPasswordPolicyError } from './src/lib/passwordPolicy.js';
@@ -200,8 +201,8 @@ const recoveryRateLimit = rateLimit('student-recovery-ip', 30, 15 * 60 * 1000);
 const recoveryCandidateRateLimit = rateLimit('student-recovery-id', 5, 15 * 60 * 1000, req => String(req.body?.studentId || '').trim().slice(0, 100));
 const interviewStartRateLimit = rateLimit('interview-start-ip', 120, 60 * 60 * 1000);
 const interviewStartCandidateRateLimit = rateLimit('interview-start-candidate', 3, 15 * 60 * 1000, req => String(req.body?.candidateId || '').slice(0, 120));
-const interviewAnswerRateLimit = rateLimit('interview-answer', 10, 60 * 1000, req => (req.params.id || 'unknown').slice(0, 120));
-const interviewCompleteRateLimit = rateLimit('interview-complete', 4, 15 * 60 * 1000, req => (req.params.id || 'unknown').slice(0, 120));
+const interviewAnswerRateLimit = rateLimit('interview-answer', 10, 60 * 1000, req => (normalizeRouteParam(req.params.id) || 'unknown').slice(0, 120));
+const interviewCompleteRateLimit = rateLimit('interview-complete', 4, 15 * 60 * 1000, req => (normalizeRouteParam(req.params.id) || 'unknown').slice(0, 120));
 
 // Interview messages carry a per-round AI "internal observation" that only the admin
 // transcript viewer reads. Strip it for student-facing reads.
@@ -556,8 +557,8 @@ app.get('/api/candidates', (req: Request, res: Response) => {
 // Candidate detail is available to an authenticated student for their own record or
 // to an administrator for review. Only administrators receive internal review data.
 app.get('/api/candidates/:id', (req: Request, res: Response) => {
-  if (!requireStudentOrAdmin(req, res, req.params.id)) return;
-  const candidate = db.getCandidateById(req.params.id);
+  if (!requireStudentOrAdmin(req, res, normalizeRouteParam(req.params.id))) return;
+  const candidate = db.getCandidateById(normalizeRouteParam(req.params.id));
   if (!candidate) {
     return res.status(404).json({ error: '候选人不存在' });
   }
@@ -597,7 +598,7 @@ app.patch('/api/candidates/:id/status', (req: Request, res: Response) => {
     return res.status(400).json({ error: '状态变更说明过长或格式无效' });
   }
 
-  const updated = db.updateCandidateStatus(req.params.id, status as CandidateStatus, operator || 'admin', reason);
+  const updated = db.updateCandidateStatus(normalizeRouteParam(req.params.id), status as CandidateStatus, operator || 'admin', reason);
   if (!updated) return res.status(404).json({ error: '候选人不存在' });
 
   res.json(updated);
@@ -607,7 +608,7 @@ app.patch('/api/candidates/:id/status', (req: Request, res: Response) => {
 app.post('/api/candidates/:id/admit', (req: Request, res: Response) => {
   try {
     const { operator, comment } = req.body;
-    const result = RecruitmentService.admitCandidate(req.params.id, operator || 'admin', comment);
+    const result = RecruitmentService.admitCandidate(normalizeRouteParam(req.params.id), operator || 'admin', comment);
     res.json(result);
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Candidate admission', '审核操作失败，请稍后重试');
@@ -618,7 +619,7 @@ app.post('/api/candidates/:id/admit', (req: Request, res: Response) => {
 app.post('/api/candidates/:id/reject', (req: Request, res: Response) => {
   try {
     const { operator, reason } = req.body;
-    const result = RecruitmentService.rejectCandidate(req.params.id, operator || 'admin', reason);
+    const result = RecruitmentService.rejectCandidate(normalizeRouteParam(req.params.id), operator || 'admin', reason);
     res.json(result);
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Candidate rejection', '审核操作失败，请稍后重试');
@@ -634,10 +635,10 @@ app.post('/api/candidates/:id/manual-review', (req: Request, res: Response) => {
       return res.status(400).json({ error: '审核结果无效，仅支持 PASSED 或 REJECTED' });
     }
     if (result === 'PASSED') {
-      const cand = RecruitmentService.admitCandidate(req.params.id, reviewerName || 'admin', overallEvaluation);
+      const cand = RecruitmentService.admitCandidate(normalizeRouteParam(req.params.id), reviewerName || 'admin', overallEvaluation);
       return res.json({ candidate: cand });
     } else {
-      const cand = RecruitmentService.rejectCandidate(req.params.id, reviewerName || 'admin', overallEvaluation);
+      const cand = RecruitmentService.rejectCandidate(normalizeRouteParam(req.params.id), reviewerName || 'admin', overallEvaluation);
       return res.json({ candidate: cand });
     }
   } catch (err: any) {
@@ -647,7 +648,7 @@ app.post('/api/candidates/:id/manual-review', (req: Request, res: Response) => {
 
 // Delete candidate record
 app.delete('/api/candidates/:id', (req: Request, res: Response) => {
-  const success = db.deleteCandidate(req.params.id);
+  const success = db.deleteCandidate(normalizeRouteParam(req.params.id));
   if (!success) {
     return res.status(404).json({ error: '候选人记录未找到或已被删除' });
   }
@@ -661,7 +662,7 @@ app.post('/api/candidates/:id/notes', (req: Request, res: Response) => {
 
   const note = db.addCandidateNote({
     id: `note-${Date.now()}`,
-    candidateId: req.params.id,
+    candidateId: normalizeRouteParam(req.params.id),
     authorId: authorId || 'admin',
     authorName: authorName || '技术部考官',
     content: content.trim(),
@@ -673,9 +674,9 @@ app.post('/api/candidates/:id/notes', (req: Request, res: Response) => {
 
 // Student confirms group join
 app.post('/api/candidates/:id/join-confirm', (req: Request, res: Response) => {
-  if (!requireStudentOrAdmin(req, res, req.params.id)) return;
+  if (!requireStudentOrAdmin(req, res, normalizeRouteParam(req.params.id))) return;
   try {
-    const candidate = RecruitmentService.confirmGroupJoin(req.params.id);
+    const candidate = RecruitmentService.confirmGroupJoin(normalizeRouteParam(req.params.id));
     res.json({ success: true, candidate: redactCandidate(candidate) });
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Group join confirmation', '入群确认失败，请稍后重试');
@@ -703,8 +704,8 @@ app.post('/api/interviews', interviewStartRateLimit, interviewStartCandidateRate
 });
 
 app.get('/api/interviews/:id', (req: Request, res: Response) => {
-  if (!requireStudentOrAdmin(req, res, req.params.id)) return;
-  const interview = db.getInterviewByCandidateId(req.params.id);
+  if (!requireStudentOrAdmin(req, res, normalizeRouteParam(req.params.id))) return;
+  const interview = db.getInterviewByCandidateId(normalizeRouteParam(req.params.id));
   if (!interview) return res.status(404).json({ error: '面试记录未找到' });
   // Student responses never include per-round AI observations.
   res.json(redactInterview(interview));
@@ -714,14 +715,14 @@ app.post('/api/interviews/:id/answer', interviewAnswerRateLimit, async (req: Req
   try {
     const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
     const { answer, submissionId } = body;
-    if (!requireStudentOrAdmin(req, res, req.params.id)) return;
+    if (!requireStudentOrAdmin(req, res, normalizeRouteParam(req.params.id))) return;
     if (typeof answer !== 'string' || !answer.trim()) return res.status(400).json({ error: '回答内容不能为空' });
     if (answer.length > 4000) return res.status(413).json({ error: '单次回答不能超过 4000 字' });
     if (submissionId !== undefined && (typeof submissionId !== 'string' || submissionId.length < 8 || submissionId.length > 100)) {
       return res.status(400).json({ error: '回答提交编号无效' });
     }
 
-    const result = await RecruitmentService.submitAnswer(req.params.id, answer, submissionId);
+    const result = await RecruitmentService.submitAnswer(normalizeRouteParam(req.params.id), answer, submissionId);
     const visibleResult = isAdminAuthed(req) ? result : redactEvaluationForStudent(result);
     res.json({ ...visibleResult, interview: redactInterview(result.interview) });
   } catch (err: any) {
@@ -731,8 +732,8 @@ app.post('/api/interviews/:id/answer', interviewAnswerRateLimit, async (req: Req
 
 app.post('/api/interviews/:id/complete', interviewCompleteRateLimit, async (req: Request, res: Response) => {
   try {
-    if (!requireStudentOrAdmin(req, res, req.params.id)) return;
-    const result = await RecruitmentService.completeInterview(req.params.id);
+    if (!requireStudentOrAdmin(req, res, normalizeRouteParam(req.params.id))) return;
+    const result = await RecruitmentService.completeInterview(normalizeRouteParam(req.params.id));
     const visibleResult = isAdminAuthed(req) ? result : redactEvaluationForStudent(result);
     res.json({ ...visibleResult, interview: redactInterview(result.interview) });
   } catch (err: any) {
@@ -745,7 +746,7 @@ app.get('/api/evaluations/:candidateId', (req: Request, res: Response) => {
   if (!isAdminAuthed(req)) {
     return res.status(401).json({ error: '未授权：请登录后再访问后台管理接口' });
   }
-  const evalData = db.getEvaluationByCandidateId(req.params.candidateId);
+  const evalData = db.getEvaluationByCandidateId(normalizeRouteParam(req.params.candidateId));
   if (!evalData) return res.status(404).json({ error: 'AI 评估报告不存在' });
   res.json(evalData);
 });
@@ -789,8 +790,8 @@ app.post('/api/recruitment-batches', (req: Request, res: Response) => {
 });
 
 app.patch('/api/recruitment-batches/:id/active', (req: Request, res: Response) => {
-  if (!db.setActiveBatch(req.params.id)) return res.status(404).json({ error: '招新批次不存在' });
-  res.json({ success: true, activeBatchId: req.params.id });
+  if (!db.setActiveBatch(normalizeRouteParam(req.params.id))) return res.status(404).json({ error: '招新批次不存在' });
+  res.json({ success: true, activeBatchId: normalizeRouteParam(req.params.id) });
 });
 
 // WeChat Group QR
@@ -883,7 +884,7 @@ app.post('/api/wechat-qr', (req: Request, res: Response) => {
 
 app.delete('/api/wechat-qr/:id', (req: Request, res: Response) => {
   const targetBatch = req.query.batchId ? String(req.query.batchId) : undefined;
-  const success = db.deleteWeChatQR(req.params.id, targetBatch);
+  const success = db.deleteWeChatQR(normalizeRouteParam(req.params.id), targetBatch);
   res.json({ success });
 });
 
@@ -896,7 +897,7 @@ app.patch('/api/prompts/:id', (req: Request, res: Response) => {
   const { prompt, updatedBy } = req.body;
   if (!prompt) return res.status(400).json({ error: 'Prompt 内容不能为空' });
 
-  const updated = db.updatePrompt(req.params.id, prompt, updatedBy || 'admin');
+  const updated = db.updatePrompt(normalizeRouteParam(req.params.id), prompt, updatedBy || 'admin');
   if (!updated) return res.status(404).json({ error: 'Prompt 未找到' });
   res.json(updated);
 });
@@ -1061,7 +1062,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    app.get('/{*splat}', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

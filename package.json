@@ -14,7 +14,7 @@
     "clean": "node scripts/clean.mjs",
     "lint": "tsc --noEmit",
     "audit": "npm audit --audit-level=moderate",
-    "test": "node --import tsx --test tests/evaluation.test.ts tests/manualReview.test.ts tests/passwordPolicy.test.ts"
+    "test": "node --import tsx --test tests/evaluation.test.ts tests/manualReview.test.ts tests/routeParams.test.ts tests/express5Routes.test.ts tests/passwordPolicy.test.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.7",
