@@ -1,44 +1,54 @@
-name: Bug report
-description: Report a problem so maintainers can reproduce and fix it.
-title: "[Bug]: "
+name: Bug report · 问题反馈
+description: Report a reproducible problem in TECHSEED · 反馈可复现的问题
+title: "[Bug] "
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Please do not include real student information, passwords, API keys, access tokens, or database files. Replace sensitive values with examples.
+        Before opening an issue, check whether it has already been reported.
+        提交前请先搜索是否已有相同问题。
+
+        **Never include real applicant records, passwords, API keys, tokens, or `.env` contents.**
+        **请勿填写真实报名资料、密码、API 密钥、访问令牌或 `.env` 内容。**
   - type: textarea
     id: summary
     attributes:
-      label: What happened?
-      description: Describe the problem and what you expected to happen.
-      placeholder: A clear description of the issue.
+      label: What happened? · 问题描述
+      description: Describe the issue and what you expected to happen. · 描述实际现象和预期结果。
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: How can we reproduce it?
-      description: List the steps, using dummy data where needed.
+      label: How can we reproduce it? · 复现步骤
+      description: Use a clean local database and synthetic data. · 请使用干净的本地数据库和虚构数据。
       placeholder: |
-        1. Open ...
-        2. Choose ...
-        3. See the error
+        1. Open …
+        2. Select …
+        3. Observe …
     validations:
       required: true
-  - type: textarea
+  - type: input
+    id: version
+    attributes:
+      label: TECHSEED version or commit · 项目版本或提交
+      placeholder: e.g. 1.0.0 or a commit SHA
+    validations:
+      required: false
+  - type: input
     id: environment
     attributes:
-      label: Environment
-      description: Include the deployment type, browser, and Node.js version if relevant.
-      placeholder: e.g. local development, Node.js 22, Chrome
+      label: Environment · 运行环境
+      description: Include operating system, browser, and Node.js version where relevant. · 可填写操作系统、浏览器和 Node.js 版本。
+      placeholder: e.g. Ubuntu 24.04, Chrome, Node.js 22
     validations:
       required: false
   - type: textarea
     id: logs
     attributes:
-      label: Relevant logs or screenshots
-      description: Remove personal data and secrets before attaching logs or screenshots.
+      label: Relevant logs or screenshots · 相关日志或截图
+      description: Remove names, contact details, credentials, and other private data first. · 上传前请清除姓名、联系方式、凭据及其他隐私信息。
       render: text
     validations:
       required: false

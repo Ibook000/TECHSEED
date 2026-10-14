@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Lock, User, ArrowLeft, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, ArrowLeft, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { AdminUser } from '../../types.js';
+import { ORGANIZATION_NAME } from '../../lib/branding.js';
 import { PgyMascot } from '../PgyMascot.js';
 import { ADMIN_USER_KEY, saveAdminToken, setSessionStoredValue } from '../../lib/auth.js';
 
@@ -21,7 +22,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
+    if (!username.trim() || password.length === 0) {
       setError('请输入技术部管理账号与访问密码');
       return;
     }
@@ -35,7 +36,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: username.trim(),
-          password: password.trim(),
+          password,
         }),
       });
 
@@ -75,7 +76,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
             <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500 tracking-wider">
               <span className="text-amber-800 font-semibold">学生会技术部</span>
               <span>·</span>
-              <span>xxxxx学院管理后台</span>
+              <span>{ORGANIZATION_NAME}管理后台</span>
             </div>
           </div>
         </div>
@@ -187,7 +188,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-zinc-200 bg-white py-4 text-center font-mono text-[11px] text-zinc-500">
-        © {new Date().getFullYear()} xxxxx学院学生会技术部 · 招新管理后台
+        © {new Date().getFullYear()} {ORGANIZATION_NAME}学生会技术部 · 招新管理后台
       </footer>
     </div>
   );

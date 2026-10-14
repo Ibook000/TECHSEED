@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import { ORGANIZATION_NAME } from '../lib/branding.js';
 
 interface PgyMascotProps {
   className?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'badge' | 'plain' | 'circle' | 'glow';
-  showFlagText?: boolean;
 }
 
 const SIZE_MAP = {
@@ -27,7 +27,6 @@ export const PgyMascot: React.FC<PgyMascotProps> = ({
   className = '',
   size = 'md',
   variant = 'badge',
-  showFlagText = false,
 }) => {
   const [imgError, setImgError] = useState(false);
   const imageSrc = !imgError ? '/PGY_logo.png' : null;
@@ -40,7 +39,7 @@ export const PgyMascot: React.FC<PgyMascotProps> = ({
     const imgElement = (
       <img
         src={imageSrc}
-        alt="xxxxx学院 学生会技术部吉祥物"
+        alt={`${ORGANIZATION_NAME} 学生会技术部吉祥物`}
         referrerPolicy="no-referrer"
         onError={() => setImgError(true)}
         className="w-full h-full object-contain select-none transition-transform"
@@ -58,7 +57,7 @@ export const PgyMascot: React.FC<PgyMascotProps> = ({
     return (
       <div
         className={getContainerStyles()}
-        title="xxxxx学院学生会技术部"
+        title={`${ORGANIZATION_NAME}学生会技术部`}
       >
         {imgElement}
       </div>
@@ -69,7 +68,7 @@ export const PgyMascot: React.FC<PgyMascotProps> = ({
   return (
     <div
       className={`relative inline-flex items-center justify-center select-none ${SIZE_MAP[size]} ${className}`}
-      title="xxxxx学院学生会技术部吉祥物"
+      title={`${ORGANIZATION_NAME}学生会技术部吉祥物`}
     >
       <svg
         viewBox="0 0 200 200"
@@ -179,7 +178,7 @@ export const PgyMascot: React.FC<PgyMascotProps> = ({
         {/* Tablet in Hand (Left) */}
         <rect x="22" y="125" width="22" height="30" rx="3" fill="#F1F5F9" stroke="#0F172A" strokeWidth="2" transform="rotate(-15 22 125)" />
         <text x="24" y="144" fontSize="4" fontWeight="bold" fill="#0284C7" fontFamily="sans-serif" transform="rotate(-15 24 144)">
-          xxxxx学院
+          {ORGANIZATION_NAME}
         </text>
 
         {/* Flag Pole (Held by Right Hand) */}
@@ -198,7 +197,7 @@ export const PgyMascot: React.FC<PgyMascotProps> = ({
         />
         {/* Flag Text & Logo */}
         <text x="160" y="47" fontSize="5" fontWeight="bold" fill="#1E3A8A" fontFamily="sans-serif">
-          xxxxx学院
+          {ORGANIZATION_NAME}
         </text>
         <text x="162" y="54" fontSize="3" fill="#1E3A8A" fontFamily="monospace">
           TECHSEED
@@ -208,10 +207,9 @@ export const PgyMascot: React.FC<PgyMascotProps> = ({
           IEE
         </text>
         <text x="165" y="76" fontSize="4.5" fontWeight="bold" fill="#0284C7" fontFamily="sans-serif">
-          xxxxx学院
+          {ORGANIZATION_NAME}
         </text>
       </svg>
     </div>
   );
 };
-

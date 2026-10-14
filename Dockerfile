@@ -2,6 +2,9 @@ FROM node:22-bookworm-slim AS build
 
 WORKDIR /app
 
+ARG VITE_ORGANIZATION_NAME=xxxxx学院
+ENV VITE_ORGANIZATION_NAME=$VITE_ORGANIZATION_NAME
+
 COPY package.json package-lock.json ./
 RUN npm ci
 

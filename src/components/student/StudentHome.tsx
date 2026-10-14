@@ -9,11 +9,9 @@ import {
   ShieldCheck,
   ArrowRight,
   Search,
-  Clock,
-  Sparkles,
-  CheckCircle2,
 } from 'lucide-react';
 import { TechDirection } from '../../types.js';
+import { ORGANIZATION_NAME } from '../../lib/branding.js';
 
 interface StudentHomeProps {
   batchYear: number;
@@ -65,7 +63,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
 
           {/* Subtitle */}
           <p className="text-base sm:text-lg text-zinc-600 font-sans leading-relaxed max-w-2xl">
-            面向 xxxxx学院全体大一新生。欢迎从零开始报名；初筛结果仅作参考，最终由管理员人工审核。
+            面向 {ORGANIZATION_NAME}全体大一新生。欢迎从零开始报名；初筛结果仅作参考，最终由管理员人工审核。
           </p>
 
           {/* Key Metrics / Technical Data Grid */}

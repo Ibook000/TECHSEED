@@ -3,12 +3,13 @@ module.exports = {
     {
       name: 'techseed',
       script: 'dist/server.cjs',
-      cwd: '/opt/techseed',
+      cwd: __dirname,
       instances: 1,
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        PORT: 80,
+        HOST: '127.0.0.1',
+        PORT: 3000,
       },
       max_memory_restart: '400M',
       autorestart: true,

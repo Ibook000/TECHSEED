@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Sparkles, AlertCircle, Check } from 'lucide-react';
+import { X, AlertCircle, Check } from 'lucide-react';
 import { CandidateProfile, TechnicalFoundation, TechDirection, REGISTRATION_CONSENT_VERSION } from '../../types.js';
 import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 import { PgyMascot } from '../PgyMascot.js';

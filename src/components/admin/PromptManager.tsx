@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Save, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Save, CheckCircle2 } from 'lucide-react';
 import { PromptConfig } from '../../types.js';
 
 export const PromptManager: React.FC = () => {

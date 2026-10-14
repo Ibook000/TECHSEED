@@ -103,81 +103,12 @@ const llmLimiter = new ConcurrencyLimiter(MAX_CONCURRENT_LLM, MAX_QUEUED_LLM, LL
 
 console.log(`[AI Service] Concurrency limiter initialized: max ${MAX_CONCURRENT_LLM} concurrent calls, ${MAX_QUEUED_LLM} queued, ${LLM_QUEUE_TIMEOUT_MS}ms queue timeout`);
 
-/**
- * Multi-API-key round-robin pool with failover.
- *
- * Keys are sourced from (in priority order):
- *   1. OPENAI_API_KEYS env var — comma-separated list of keys (all share baseUrl + model)
- *   2. OPENAI_API_KEY + FALLBACK_OPENAI_API_KEY env vars
- *   3. DB ai_settings.primary + fallback
- *
- * Strategy:
- *   - Round-robin assignment across healthy keys for load distribution
- *   - On failure (429, 5xx, timeout, network error), automatically retry with next key
- *   - All keys share the same baseUrl and model
- */
+/** Resolved API key and endpoint used for one OpenAI-compatible provider attempt. */
 interface APIKeyEntry {
   key: string;
   baseUrl: string;
   model: string;
 }
-
-class APIKeyPool {
-  private keys: APIKeyEntry[] = [];
-  private nextIndex = 0;
-
-  setKeys(entries: APIKeyEntry[]): void {
-    this.keys = entries.filter(e => e.key && e.baseUrl && e.model);
-    this.nextIndex = 0;
-  }
-
-  size(): number {
-    return this.keys.length;
-  }
-
-  /**
-   * Get the next key in round-robin order.
-   * Returns null if no keys are configured.
-   */
-  nextKey(): APIKeyEntry | null {
-    if (this.keys.length === 0) return null;
-    const entry = this.keys[this.nextIndex % this.keys.length];
-    this.nextIndex = (this.nextIndex + 1) % this.keys.length;
-    return entry;
-  }
-
-  /**
-   * Try calling fn with keys in round-robin order, failing over to the next key on error.
-   * Tries each key at most once per call. Returns null if all keys fail.
-   */
-  async tryEach<T>(fn: (entry: APIKeyEntry, attempt: number, total: number) => Promise<T | null>): Promise<T | null> {
-    const total = this.keys.length;
-    if (total === 0) return null;
-
-    // Start from the current round-robin position
-    const startIdx = this.nextIndex % total;
-    this.nextIndex = (this.nextIndex + 1) % total;
-
-    for (let i = 0; i < total; i++) {
-      const idx = (startIdx + i) % total;
-      const entry = this.keys[idx];
-      const attempt = i + 1;
-
-      const result = await fn(entry, attempt, total);
-      if (result !== null && result !== undefined) {
-        return result;
-      }
-
-      if (attempt < total) {
-        console.warn(`[AI Service] Key ${attempt}/${total} failed, trying next key (failover)...`);
-      }
-    }
-
-    return null;
-  }
-}
-
-const apiKeyPool = new APIKeyPool();
 
 /**
  * Initialize the API key pool from environment variables.

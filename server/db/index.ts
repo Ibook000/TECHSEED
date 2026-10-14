@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
+import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
 import {
   AdminUser,
   RecruitmentBatch,
@@ -40,7 +40,7 @@ const DB_FILE = path.join(DB_DIR, 'db.json');
 
 // A fresh DB has no built-in password. Set ADMIN_DEFAULT_PASSWORD before first startup;
 // passwords changed later through the admin UI are stored as scrypt hashes.
-const DEFAULT_ADMIN_PASSWORD = (process.env.ADMIN_DEFAULT_PASSWORD || '').trim();
+const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || '';
 
 // Passwords are stored as "scrypt:<base64url salt>:<hex digest>". The DB predates hashing
 // and may still hold plaintext entries, so verifyPassword() migrates them on first success.
@@ -373,7 +373,13 @@ class Database {
   // tokens survive PM2's max_memory_restart restarts; AUTH_TOKEN_SECRET in the
   // environment always wins over the stored value.
   private ensureAuthSecret() {
-    if ((process.env.AUTH_TOKEN_SECRET || '').trim()) return;
+    const configuredSecret = (process.env.AUTH_TOKEN_SECRET || '').trim();
+    if (configuredSecret) {
+      if (Buffer.byteLength(configuredSecret, 'utf8') < 32) {
+        throw new Error('AUTH_TOKEN_SECRET must be at least 32 bytes, or left empty to generate and persist a random secret.');
+      }
+      return;
+    }
     if (this.data.auth_secret) return;
     this.data.auth_secret = randomBytes(32).toString('base64url');
     this.save();
@@ -568,7 +574,7 @@ class Database {
   // Status History
   public recordStatusHistory(candidateId: string, fromStatus: CandidateStatus, toStatus: CandidateStatus, operator: string, reason?: string) {
     this.data.candidate_status_history.unshift({
-      id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: `hist-${randomUUID()}`,
       candidateId,
       fromStatus,
       toStatus,

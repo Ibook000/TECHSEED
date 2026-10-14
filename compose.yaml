@@ -1,12 +1,16 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        VITE_ORGANIZATION_NAME: ${VITE_ORGANIZATION_NAME:-xxxxx学院}
     restart: unless-stopped
     init: true
     ports:
       - "127.0.0.1:${PORT:-3000}:3000"
     environment:
       NODE_ENV: production
+      HOST: 0.0.0.0
       PORT: 3000
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
       ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:?Set ADMIN_DEFAULT_PASSWORD in .env}

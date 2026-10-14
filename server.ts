@@ -6,13 +6,31 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { db } from './server/db/index.js';
 import { RecruitmentService } from './server/services/recruitment.js';
 import { HttpError } from './server/errors.js';
-import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION, UserRole } from './src/types.js';
+import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION } from './src/types.js';
 import { getAdminPasswordPolicyError } from './src/lib/passwordPolicy.js';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
-const trustedProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
-if (Number.isInteger(trustedProxyHops) && trustedProxyHops > 0 && trustedProxyHops <= 10) {
+app.disable('x-powered-by');
+
+function readIntegerEnv(name: string, fallback: number, min: number, max: number): number {
+  const rawValue = process.env[name]?.trim();
+  if (!rawValue) return fallback;
+
+  if (!/^\d+$/.test(rawValue)) {
+    throw new Error(`${name} must be an integer between ${min} and ${max}.`);
+  }
+
+  const value = Number(rawValue);
+  if (!Number.isSafeInteger(value) || value < min || value > max) {
+    throw new Error(`${name} must be an integer between ${min} and ${max}.`);
+  }
+  return value;
+}
+
+const PORT = readIntegerEnv('PORT', 3000, 1, 65535);
+const HOST = process.env.HOST?.trim() || '127.0.0.1';
+const trustedProxyHops = readIntegerEnv('TRUST_PROXY_HOPS', 0, 0, 10);
+if (trustedProxyHops > 0) {
   app.set('trust proxy', trustedProxyHops);
 }
 
@@ -263,22 +281,21 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // --- API Routes ---
 
 // Health check
-app.get('/api/health', (req: Request, res: Response) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Auth - Strict Independent Admin Authentication
 app.post('/api/auth/login', loginRateLimit, (req: Request, res: Response) => {
-  const { username, password } = req.body;
+  const { username, password } = req.body || {};
 
-  if (!username || !password) {
+  if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || password.length === 0) {
     return res.status(400).json({ success: false, error: '请输入账号与访问密码' });
   }
 
-  const cleanUser = String(username).trim();
-  const cleanPass = String(password).trim();
+  const cleanUser = username.trim();
 
-  if (db.verifyPassword(cleanUser, cleanPass)) {
+  if (db.verifyPassword(cleanUser, password)) {
     const user = db.findAdminUser(cleanUser);
     const token = createAdminToken(cleanUser);
     if (user && token) {
@@ -298,15 +315,16 @@ app.post('/api/auth/login', loginRateLimit, (req: Request, res: Response) => {
 });
 
 app.post('/api/auth/change-password', (req: Request, res: Response) => {
-  const { username, oldPassword, newPassword } = req.body;
+  const { username, oldPassword, newPassword } = req.body || {};
 
-  if (!username || !oldPassword || !newPassword) {
+  if (typeof username !== 'string' || typeof oldPassword !== 'string' || typeof newPassword !== 'string' ||
+      !username.trim() || oldPassword.length === 0 || newPassword.length === 0) {
     return res.status(400).json({ success: false, error: '参数不完整：请提供旧密码与新密码' });
   }
 
-  const cleanUser = String(username).trim();
-  const cleanOld = String(oldPassword).trim();
-  const cleanNew = String(newPassword).trim();
+  const cleanUser = username.trim();
+  const cleanOld = oldPassword;
+  const cleanNew = newPassword;
 
   const passwordPolicyError = getAdminPasswordPolicyError(cleanNew);
   if (passwordPolicyError) {
@@ -328,12 +346,12 @@ app.post('/api/auth/change-password', (req: Request, res: Response) => {
   });
 });
 
-app.get('/api/auth/users', (req: Request, res: Response) => {
+app.get('/api/auth/users', (_req: Request, res: Response) => {
   res.json(db.getAdminUsers());
 });
 
 // Logo status and upload
-app.get('/api/logo-status', (req: Request, res: Response) => {
+app.get('/api/logo-status', (_req: Request, res: Response) => {
   const publicLogoPath = path.join(process.cwd(), 'public', 'PGY_logo.png');
   const exists = fs.existsSync(publicLogoPath);
   res.json({ exists, url: exists ? '/PGY_logo.png' : null });
@@ -609,7 +627,7 @@ app.post('/api/candidates/:id/reject', (req: Request, res: Response) => {
 // Legacy manual-review route (alias to admit / reject for compatibility)
 app.post('/api/candidates/:id/manual-review', (req: Request, res: Response) => {
   try {
-    const { result, reviewerName, reviewerId, overallEvaluation } = req.body;
+    const { result, reviewerName, overallEvaluation } = req.body;
     if (result === 'PASSED') {
       const cand = RecruitmentService.admitCandidate(req.params.id, reviewerName || 'admin', overallEvaluation);
       return res.json({ candidate: cand });
@@ -735,7 +753,7 @@ app.get('/api/dashboard/stats', (req: Request, res: Response) => {
 });
 
 // Batches
-app.get('/api/recruitment-batches', (req: Request, res: Response) => {
+app.get('/api/recruitment-batches', (_req: Request, res: Response) => {
   res.json(db.getBatches());
 });
 
@@ -865,7 +883,7 @@ app.delete('/api/wechat-qr/:id', (req: Request, res: Response) => {
 });
 
 // AI Prompts
-app.get('/api/prompts', (req: Request, res: Response) => {
+app.get('/api/prompts', (_req: Request, res: Response) => {
   res.json(db.getPrompts());
 });
 
@@ -898,7 +916,7 @@ function maskApiKey(key: string): string {
   return `${firstMasked} (+${keys.length - 1} 个轮询 key)`;
 }
 
-app.get('/api/ai-settings', (req: Request, res: Response) => {
+app.get('/api/ai-settings', (_req: Request, res: Response) => {
   const s = db.getAISettings();
   res.json({
     id: s.id,
@@ -1038,7 +1056,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
@@ -1049,8 +1067,8 @@ async function startServer() {
     return res.status(500).json({ error: '服务器暂时无法完成请求，请稍后重试' });
   });
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] Tech Department Recruitment System listening on http://0.0.0.0:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`[Server] Tech Department Recruitment System listening on http://${HOST}:${PORT}`);
   });
 }
 

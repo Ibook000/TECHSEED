@@ -24,7 +24,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!username.trim() || !password.trim()) {
+    if (!username.trim() || password.length === 0) {
       setError('请输入账号与访问密码');
       return;
     }
@@ -35,7 +35,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password: password.trim() }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
 
       const data = await res.json();

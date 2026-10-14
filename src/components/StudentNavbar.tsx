@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Search, RotateCcw } from 'lucide-react';
 import { Candidate } from '../types.js';
+import { ORGANIZATION_NAME } from '../lib/branding.js';
 import { PgyMascot } from './PgyMascot.js';
 
 interface StudentNavbarProps {
@@ -41,7 +42,7 @@ export const StudentNavbar: React.FC<StudentNavbarProps> = ({
             <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500 tracking-wider">
               <span className="text-amber-600 font-bold">学生会技术部</span>
               <span>·</span>
-              <span>xxxxx学院 {batchYear}</span>
+              <span>{ORGANIZATION_NAME} {batchYear}</span>
             </div>
           </div>
         </button>

@@ -1,6 +1,9 @@
 # TECHSEED AI 招新系统
 
+[简体中文](README.md) · [English](README.en.md)
+
 [![CI](https://github.com/Ibook000/TECHSEED/actions/workflows/ci.yml/badge.svg)](https://github.com/Ibook000/TECHSEED/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Ibook000/TECHSEED/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ibook000/TECHSEED/actions/workflows/codeql.yml)
 
 xxxxx学院学生会技术部 AI 招新系统（Tech Dept AI Recruitment System）。
 
@@ -80,7 +83,7 @@ npm run audit   # 检查已知依赖漏洞（npm audit）
 npm run clean   # 清理构建产物
 ```
 
-推送到 `main` 或提交 Pull Request 时，GitHub Actions 会在 Node.js 22 和 24 上执行依赖审计、类型检查与生产构建。
+推送到 `main` 或提交 Pull Request 时，GitHub Actions 会在 Node.js 22 和 24 上执行依赖审计、类型检查与生产构建，并用 CodeQL 扫描 TypeScript/JavaScript 与 Actions 工作流。
 
 ## 参与贡献
 
@@ -92,17 +95,21 @@ npm run clean   # 清理构建产物
 
 | 变量 | 说明 |
 | --- | --- |
-| `PORT` | 服务端口，默认 3000 |
-| `TRUST_PROXY_HOPS` | 可信反向代理层数，直连部署保持 `0`；仅按实际可信代理链路配置 |
+| `HOST` | 服务监听地址，默认 `127.0.0.1`；Docker 容器绑定 `0.0.0.0`，直接公网监听时需显式修改 |
+| `PORT` | 服务端口，默认 3000；必须是 1–65535 的整数 |
+| `VITE_ORGANIZATION_NAME` | 页面展示的学校名称，默认 `xxxxx学院`；Docker 部署修改后执行 `docker compose up -d --build` |
+| `TRUST_PROXY_HOPS` | 可信反向代理层数，取值 `0`–`10`；直连部署保持 `0`，仅按实际可信代理链路配置 |
 | `OPENAI_API_KEY` / `OPENAI_API_KEYS` | 主 LLM 池 Key，`_KEYS` 支持逗号分隔多 Key |
 | `OPENAI_BASE_URL` / `OPENAI_MODEL` | 主 LLM 接口地址与模型名 |
 | `FALLBACK_OPENAI_*` | 降级备用池（主池全部失败时启用），变量含义同上 |
 | `LLM_MAX_CONCURRENT` | LLM 请求并发上限，默认 10；最多 100 个等待请求，排队超过 30 秒会降级到启发式引擎 |
-| `ADMIN_DEFAULT_PASSWORD` | 初始化新数据库前必填的管理员初始密码（12–128 个字符）；没有内置默认值 |
-| `AUTH_TOKEN_SECRET` | 管理端 Token 签名密钥，留空自动生成并持久化 |
+| `ADMIN_DEFAULT_PASSWORD` | 初始化新数据库前必填的管理员初始密码（12–128 个字符，按原文校验，包含首尾空格，但不能全为空白）；没有内置默认值 |
+| `AUTH_TOKEN_SECRET` | 管理端 Token 签名密钥，至少 32 字节；留空则自动生成并持久化 |
 | `DISABLE_HMR` | 设为 `true` 禁用 HMR 与文件监听（生产部署用） |
 
 > 数据库中的 `ai_settings` 优先级高于环境变量，管理端"AI 设置"界面修改后立即生效，无需重启。
+>
+> `VITE_` 前缀变量会嵌入浏览器构建产物，只能放公开配置；不要用它保存 API Key 或其他密钥。
 
 ## 使用指南
 
@@ -119,9 +126,9 @@ npm run clean   # 清理构建产物
 
 1. 访问 `http://localhost:3000/admin`（应用内任意页面按 `Ctrl+Shift+A` 可快速跳转）
 2. 使用管理员账号登录（用户名 `admin`，密码为 `.env` 中配置的 `ADMIN_DEFAULT_PASSWORD`）
-3. 可执行：批次管理、候选人审核与录取决策、状态流转、AI 提示词与 AI 设置维护、CSV 导出
+3. 在“数据总览”查看招新漏斗与批次统计，点击统计卡片可跳转到对应候选人筛选结果；也可执行批次管理、候选人审核与录取决策、状态流转、AI 提示词与 AI 设置维护、CSV 导出
 
-管理控制台顶部可以新建批次并显式启用所选批次。启用后，新报名会进入该批次，学生端显示该批次年份；群二维码仍需在“二维码管理”中按批次单独配置。
+管理控制台顶部可以新建批次并显式启用所选批次。启用后，新报名会进入该批次，学生端显示该批次年份；在“微信群二维码”页面可选择批次并单独配置对应群码。
 
 “重置数据”只删除当前启用批次的候选人及关联面试、评估、备注和状态历史；执行前需要输入“重置”确认。真实数据操作前仍应先验证备份可恢复。
 
@@ -181,15 +188,28 @@ docker compose logs -f app
 
 ### PM2
 
-生产环境使用 PM2 托管（参考 `ecosystem.config.cjs`）：
+生产环境可以使用 PM2 托管（参考 `ecosystem.config.cjs`）。先在项目目录配置 `.env`，然后首次启动运行：
 
 ```bash
+cd /path/to/TECHSEED  # 替换为实际项目目录
+npm ci
+cp .env.example .env
+# 编辑 .env，设置 ADMIN_DEFAULT_PASSWORD；按需配置 AI 服务
+npm run build
+pm2 start ecosystem.config.cjs
+```
+
+后续发布更新时运行：
+
+```bash
+npm ci
 npm run build
 pm2 reload ecosystem.config.cjs --update-env
 ```
 
 注意事项：
 
+- PM2 配置会从自身所在目录运行服务，并只监听本机 `127.0.0.1:3000`；通过本机反向代理接入，不要让 Node 进程以 root 身份绑定特权端口
 - 生产环境通过 `.env` 提供配置（PM2 仅注入 `NODE_ENV` 与 `PORT`，其余由 dotenv 从进程工作目录读取）
 - `data/db.json` 为唯一持久化层。运行中可用 `npm run backup` 创建一致的时间戳快照；Docker Compose 部署请运行 `docker compose exec app npm run backup`。**恢复或替换数据库文件前必须先停止服务**，否则内存中的旧状态可能覆盖恢复文件
 - 快照保存在 `data/backups/`；POSIX 系统上脚本以 `0700` 创建目录、以 `0600` 创建文件。Windows 上 Node.js 权限位不能区分所有者、组和其他用户，部署时应通过 NTFS ACL 将 `data/` 限制给服务账号。备份含敏感报名资料，应按学校的数据留存要求清理，并把灾备副本复制到受控的独立存储

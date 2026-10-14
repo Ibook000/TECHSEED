@@ -130,6 +130,15 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+function isSameOriginApiRequest(url: string): boolean {
+  try {
+    const parsed = new URL(url, window.location.href);
+    return parsed.origin === window.location.origin && parsed.pathname.startsWith('/api/');
+  } catch {
+    return false;
+  }
+}
+
 // Attach the current admin or student credential to same-origin API requests.
 // The server performs the actual authorization checks.
 export function installFetchAuth(): void {
@@ -139,7 +148,7 @@ export function installFetchAuth(): void {
     const url = requestUrl(input);
     const adminToken = getAdminToken();
     const studentToken = getStudentAccessToken();
-    const isApiCall = url.includes('/api/');
+    const isApiCall = isSameOriginApiRequest(url);
 
     if (isApiCall && (adminToken || studentToken)) {
       const headers = new Headers(input instanceof Request ? input.headers : undefined);

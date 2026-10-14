@@ -2,15 +2,11 @@ import React from 'react';
 import {
   Users,
   CheckCircle,
-  Clock,
   TrendingUp,
   UserCheck,
   UserX,
   QrCode,
   Award,
-  Filter,
-  Layers,
-  ArrowRight,
 } from 'lucide-react';
 import {
   RadarChart,
@@ -25,8 +21,6 @@ import {
   YAxis,
   Tooltip,
   Cell,
-  PieChart,
-  Pie,
 } from 'recharts';
 import { DashboardStats } from '../../types.js';
 
@@ -99,8 +93,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* 7 Metrics Bento Grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => onFilterPreset?.('ALL')}
-          className="cursor-pointer rounded-[12px] border border-zinc-200 bg-white p-3.5 transition-all hover:border-amber-400 hover:bg-amber-50/20 shadow-xs"
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onFilterPreset?.('ALL');
+            }
+          }}
+          className="cursor-pointer rounded-[12px] border border-zinc-200 bg-white p-3.5 transition-all hover:border-amber-400 hover:bg-amber-50/20 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs"
         >
           <div className="flex items-center justify-between text-zinc-400">
             <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">报名总数</span>
@@ -112,8 +114,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => onFilterPreset?.('NEEDS_REVIEW')}
-          className="cursor-pointer rounded-[12px] border border-sky-200 bg-sky-50/60 p-3.5 transition-all hover:border-sky-300 hover:bg-sky-50 shadow-xs"
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onFilterPreset?.('NEEDS_REVIEW');
+            }
+          }}
+          className="cursor-pointer rounded-[12px] border border-sky-200 bg-sky-50/60 p-3.5 transition-all hover:border-sky-300 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs"
         >
           <div className="flex items-center justify-between text-zinc-400">
             <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">待人工审核</span>
@@ -125,8 +135,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => onFilterPreset?.('AI_RECOMMENDED')}
-          className="cursor-pointer rounded-[12px] border border-amber-200 bg-amber-50/40 p-3.5 transition-all hover:border-amber-400 hover:bg-amber-50/70 shadow-xs"
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onFilterPreset?.('AI_RECOMMENDED');
+            }
+          }}
+          className="cursor-pointer rounded-[12px] border border-amber-200 bg-amber-50/40 p-3.5 transition-all hover:border-amber-400 hover:bg-amber-50/70 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs"
         >
           <div className="flex items-center justify-between text-amber-700">
             <span className="font-mono text-[10px] uppercase tracking-wider font-bold">AI建议复核</span>
@@ -138,8 +156,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => onFilterPreset?.('ADMITTED')}
-          className="cursor-pointer rounded-[12px] border border-amber-300 bg-amber-100/50 p-3.5 transition-all hover:border-amber-400 hover:bg-amber-100 shadow-xs"
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onFilterPreset?.('ADMITTED');
+            }
+          }}
+          className="cursor-pointer rounded-[12px] border border-amber-300 bg-amber-100/50 p-3.5 transition-all hover:border-amber-400 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs"
         >
           <div className="flex items-center justify-between text-amber-800">
             <span className="font-mono text-[10px] uppercase tracking-wider font-bold">正式录取</span>
@@ -151,8 +177,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => onFilterPreset?.('REJECTED')}
-          className="cursor-pointer rounded-[12px] border border-zinc-200 bg-white p-3.5 transition-all hover:border-zinc-300 hover:bg-zinc-50 shadow-xs"
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onFilterPreset?.('REJECTED');
+            }
+          }}
+          className="cursor-pointer rounded-[12px] border border-zinc-200 bg-white p-3.5 transition-all hover:border-zinc-300 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs"
         >
           <div className="flex items-center justify-between text-zinc-400">
             <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">未予录用</span>
@@ -164,8 +198,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => onFilterPreset?.('GROUP_CONFIRMED')}
-          className="cursor-pointer rounded-[12px] border border-zinc-200 bg-white p-3.5 transition-all hover:border-amber-400 hover:bg-amber-50/20 shadow-xs"
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onFilterPreset?.('GROUP_CONFIRMED');
+            }
+          }}
+          className="cursor-pointer rounded-[12px] border border-zinc-200 bg-white p-3.5 transition-all hover:border-amber-400 hover:bg-amber-50/20 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs"
         >
           <div className="flex items-center justify-between text-zinc-400">
             <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">已入微信群</span>

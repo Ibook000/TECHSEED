@@ -7,7 +7,7 @@ xxxxx学院学生会技术部 AI 招新系统。前端使用 React、TypeScript 
 - 延续现有 React、TypeScript、Express 和 TailwindCSS 技术栈，保持学生端与管理端交互一致。
 - 修改 API 时同步检查前端调用、类型定义与 README 使用说明。
 - 保持候选人状态流转和管理端人工审核流程清晰；AI 评分仅作辅助参考。
-- UI 中的学校名称统一使用“xxxxx学院”。
+- UI 中的学校名称统一读取 `VITE_ORGANIZATION_NAME`，未配置时使用“xxxxx学院”。
 
 ## 数据与凭据
 

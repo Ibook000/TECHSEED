@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { db } from '../db/index.js';
 import { HttpError } from '../errors.js';
 import {
@@ -6,7 +7,6 @@ import {
   CandidateProfile,
   DashboardStats,
   CapabilityScores,
-  WeChatGroupQR,
   CandidatePrivacyConsent,
 } from '../../src/types.js';
 import { AIService } from './ai.js';
@@ -51,7 +51,7 @@ export class RecruitmentService {
       return { candidate: existing, isNew: false };
     }
 
-    const candidateId = `cand-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const candidateId = `cand-${randomUUID()}`;
     const now = new Date().toISOString();
 
     const newCandidate: Candidate = {

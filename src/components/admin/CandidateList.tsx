@@ -7,11 +7,12 @@ import {
   ArrowUp,
   ArrowDown,
   RotateCcw,
+  RefreshCw,
   Users,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Candidate, AIRecommendationGrade, TechDirection, CandidateStatus } from '../../types.js';
+import { Candidate, AIRecommendationGrade, CandidateStatus } from '../../types.js';
 
 interface CandidateListProps {
   candidates: Candidate[];
@@ -408,6 +409,15 @@ export const CandidateList: React.FC<CandidateListProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="flex items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-700 transition-colors hover:border-amber-400 hover:text-zinc-950 shadow-xs"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>刷新列表</span>
+          </button>
+
           {/* Current Sort Indicator with Reset */}
           <div className="flex items-center gap-2 rounded-[8px] border border-zinc-200 bg-white px-2.5 py-1 text-zinc-700 shadow-xs">
             <span className="text-zinc-400 text-[10px] uppercase">当前排序:</span>

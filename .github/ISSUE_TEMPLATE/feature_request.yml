@@ -1,26 +1,31 @@
-name: Feature request
-description: Suggest an improvement for TECHSEED.
-title: "[Feature]: "
+name: Feature request · 功能建议
+description: Suggest an improvement to TECHSEED · 提出项目改进建议
+title: "[Feature] "
 labels: [enhancement]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Check existing issues first, and keep the proposal focused on a user need.
+        请先搜索已有 Issue，并围绕具体用户需求描述建议。
   - type: textarea
     id: problem
     attributes:
-      label: What problem should this solve?
-      description: Describe the situation or need behind the request.
+      label: What problem should this solve? · 希望解决什么问题？
+      description: Describe who is affected and what is difficult today. · 描述受影响的人和当前遇到的困难。
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: What would you like to happen?
-      description: Explain the change you have in mind. Screenshots or sketches are welcome for UI requests.
+      label: What would you like to happen? · 期望的改进
+      description: Share a concrete behavior or workflow. · 尽量描述具体行为或使用流程。
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives considered
-      description: Share other approaches you have considered, if any.
+      label: Alternatives considered · 考虑过的替代方案
+      description: Optional context, examples, or trade-offs. · 可选，补充示例或取舍。
     validations:
       required: false

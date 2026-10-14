@@ -40,6 +40,10 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const qrRequestId = useRef(0);
 
+  useEffect(() => {
+    setSelectedBatchId(activeBatchId || 'default');
+  }, [activeBatchId]);
+
   const fetchQR = async () => {
     const requestId = ++qrRequestId.current;
     setLoading(true);
@@ -179,6 +183,24 @@ export const QRCodeManager: React.FC<QRCodeManagerProps> = ({
         >
           {msg.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-amber-600" /> : <AlertCircle className="h-4 w-4 text-rose-600" />}
           <span>{msg.text}</span>
+        </div>
+      )}
+
+      {batches.length > 0 && (
+        <div className="max-w-sm rounded-[10px] border border-zinc-200 bg-white p-4 shadow-xs">
+          <label htmlFor="wechat-qr-batch" className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            选择招新批次
+          </label>
+          <select
+            id="wechat-qr-batch"
+            value={selectedBatchId}
+            onChange={event => setSelectedBatchId(event.target.value)}
+            className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 focus:border-amber-400 focus:outline-none"
+          >
+            {batches.map(batch => (
+              <option key={batch.id} value={batch.id}>{batch.name}</option>
+            ))}
+          </select>
         </div>
       )}
 

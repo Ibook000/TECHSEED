@@ -1,14 +1,11 @@
-import React, { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
+import { ORGANIZATION_NAME } from './lib/branding.js';
 import {
   Users,
   QrCode,
   Sliders,
   Settings,
-  Sparkles,
-  ArrowRight,
-  Shield,
-  Clock,
-  CheckCircle2,
+  BarChart3,
 } from 'lucide-react';
 import { StudentNavbar } from './components/StudentNavbar.js';
 import { StudentHome } from './components/student/StudentHome.js';
@@ -37,10 +34,10 @@ import {
   DashboardStats,
   RecruitmentBatch,
   AdminUser,
-  REGISTRATION_CONSENT_VERSION,
 } from './types.js';
 
 const AdminNavbar = lazy(() => import('./components/AdminNavbar.js').then(module => ({ default: module.AdminNavbar })));
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard.js').then(module => ({ default: module.AdminDashboard })));
 const AdminLoginPage = lazy(() => import('./components/admin/AdminLoginPage.js').then(module => ({ default: module.AdminLoginPage })));
 const CandidateList = lazy(() => import('./components/admin/CandidateList.js').then(module => ({ default: module.CandidateList })));
 const BatchManager = lazy(() => import('./components/admin/BatchManager.js').then(module => ({ default: module.BatchManager })));
@@ -70,7 +67,7 @@ export default function App() {
   };
 
   const [currentView, setCurrentView] = useState<'student' | 'admin'>(getInitialView);
-  const [adminTab, setAdminTab] = useState<'candidates' | 'qr' | 'prompts' | 'ai-settings'>('candidates');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'candidates' | 'qr' | 'prompts' | 'ai-settings'>('dashboard');
   const [studentScreen, setStudentScreenState] = useState<StudentScreen>(parseStudentScreenFromUrl);
 
   // Sync studentScreen to URL via pushState
@@ -157,6 +154,8 @@ export default function App() {
   const [activeBatchId, setActiveBatchId] = useState<string>('');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const activeBatch = batches.find(batch => batch.id === activeBatchId) || batches.find(batch => batch.isActive);
   const activeBatchYear = activeBatch?.year ?? new Date().getFullYear();
 
@@ -215,9 +214,13 @@ export default function App() {
     if (!getAdminToken()) {
       setCandidates([]);
       setStats(null);
+      setStatsError(null);
+      setStatsLoading(false);
       return;
     }
     if (!batchId) return;
+    setStatsLoading(true);
+    setStatsError(null);
     try {
       const [candRes, statsRes] = await Promise.all([
         fetch(`/api/candidates?batchId=${batchId}`),
@@ -231,9 +234,15 @@ export default function App() {
       if (statsRes.ok) {
         const sData = await statsRes.json();
         setStats(sData);
+      } else {
+        setStats(null);
+        setStatsError('数据总览暂时无法加载，请重试。');
       }
     } catch (err) {
       console.error('Failed to load candidates and stats:', err);
+      setStatsError('数据总览暂时无法加载，请重试。');
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -614,7 +623,20 @@ export default function App() {
               </div>
 
               {/* Sub-tab switcher */}
-              <div className="flex items-center rounded-[10px] border border-zinc-200 bg-white p-1 font-mono text-xs shadow-xs">
+              <div className="flex flex-wrap items-center gap-1 rounded-[10px] border border-zinc-200 bg-white p-1 font-mono text-xs shadow-xs">
+                <button
+                  id="tab-admin-dashboard"
+                  onClick={() => setAdminTab('dashboard')}
+                  className={`flex items-center gap-1.5 rounded-[8px] px-3 py-2.5 uppercase font-bold tracking-wider transition-all ${
+                    adminTab === 'dashboard'
+                      ? 'bg-[#FACC15] text-zinc-950 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-900'
+                  }`}
+                >
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  数据总览
+                </button>
+
                 <button
                   id="tab-admin-candidates"
                   onClick={() => setAdminTab('candidates')}
@@ -677,6 +699,34 @@ export default function App() {
 
             {/* Admin Content Area */}
             <Suspense fallback={<div className="py-8 text-sm text-zinc-500">正在加载管理面板…</div>}>
+            {adminTab === 'dashboard' && (
+              stats ? (
+                <AdminDashboard
+                  stats={stats}
+                  onFilterPreset={preset => {
+                    setSelectedPreset(preset);
+                    setAdminTab('candidates');
+                  }}
+                  onNavigateToStudent={() => navigateToView('student')}
+                />
+              ) : statsLoading ? (
+                <div role="status" className="rounded-[10px] border border-zinc-200 bg-white p-6 text-sm text-zinc-500">
+                  正在加载数据总览…
+                </div>
+              ) : (
+                <div role="alert" className="flex items-center justify-between gap-3 rounded-[10px] border border-rose-200 bg-white p-6 text-sm text-rose-700">
+                  <span>{statsError || '数据总览暂时无法加载。'}</span>
+                  <button
+                    type="button"
+                    onClick={() => loadCandidatesAndStats(activeBatchId)}
+                    className="shrink-0 rounded-[8px] border border-rose-200 px-3 py-1.5 text-xs font-semibold hover:bg-rose-50"
+                  >
+                    重试
+                  </button>
+                </div>
+              )
+            )}
+
             {adminTab === 'candidates' && (
               <CandidateList
                 candidates={candidates}
@@ -704,7 +754,7 @@ export default function App() {
 
       {/* Footer */}
       <div className="mt-24 border-t border-zinc-200 pt-8 pb-12 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px] text-zinc-500">
-        <div>© {new Date().getFullYear()} xxxxx学院学生会技术部</div>
+        <div>© {new Date().getFullYear()} {ORGANIZATION_NAME}学生会技术部</div>
         <div className="flex items-center gap-3 text-zinc-400 text-[10px]">
           <span className="text-amber-600 font-medium">学生会技术部</span>
           <span>·</span>
