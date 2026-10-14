@@ -68,13 +68,9 @@ npm run start   # Start the production build
 npm run backup  # Create a database snapshot
 ```
 
-## API reference
-
-See [the API reference](docs/API.md) for authentication headers, endpoint access requirements, and the main request fields.
-
 ## Tests
 
-The current unit tests cover score validation and grade boundaries, evidence-based heuristic scoring, empty-interview rejection, identifier redaction, and the admin password policy. HTTP routes, database migrations, and deployment environments still need broader integration coverage before using real applicant data.
+The current unit tests cover score validation and grade boundaries, evidence-based heuristic scoring, empty-interview rejection, identifier redaction, admin password policy, and manual-review decision validation. HTTP routes, database migrations, and deployment environments still need broader integration coverage before using real applicant data.
 
 ## AI configuration
 

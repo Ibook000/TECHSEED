@@ -27,7 +27,7 @@ npm run audit
 npm run build
 ```
 
-Pull Request 的 GitHub Actions 会在 Node.js 22 和 24 上执行这些检查，并运行 CodeQL 静态安全扫描。当前单元测试覆盖评分、身份信息脱敏和密码策略；如果改动核心状态流转或权限逻辑，请在 PR 中说明测试覆盖和手工验证步骤。
+Pull Request 的 GitHub Actions 会在 Node.js 22 和 24 上执行这些检查，并运行 CodeQL 静态安全扫描。当前单元测试覆盖评分、身份信息脱敏、密码策略和审核结果校验；如果改动核心状态流转或权限逻辑，请在 PR 中说明测试覆盖和手工验证步骤。
 
 ## 数据与隐私
 
@@ -61,7 +61,7 @@ npm run audit
 npm run build
 ```
 
-GitHub Actions runs these checks on Node.js 22 and 24 and performs CodeQL static analysis. Current unit tests cover scoring, identifier redaction, and password policy. For changes to core state transitions or authorization, describe relevant test coverage and any manual verification in the pull request.
+GitHub Actions runs these checks on Node.js 22 and 24 and performs CodeQL static analysis. Current unit tests cover scoring, identifier redaction, password policy, and review decision validation. For changes to core state transitions or authorization, describe relevant test coverage and any manual verification in the pull request.
 
 ### Data and privacy
 

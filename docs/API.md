@@ -33,7 +33,7 @@ This reference describes the HTTP API currently implemented by `server.ts`. All 
 | `PATCH` | `/api/candidates/:id/status` | 管理员 | JSON：目标 `status`，可选 `operator`, `reason` |
 | `POST` | `/api/candidates/:id/admit` | 管理员 | JSON：可选 `operator`, `comment`；人工录取候选人 |
 | `POST` | `/api/candidates/:id/reject` | 管理员 | JSON：可选 `operator`, `reason`；记录人工审核结果 |
-| `POST` | `/api/candidates/:id/manual-review` | 管理员 | JSON：`result`, `reviewerName`, `overallEvaluation` |
+| `POST` | `/api/candidates/:id/manual-review` | 管理员 | JSON：`result` 仅接受 `PASSED` 或 `REJECTED`，以及 `reviewerName`, `overallEvaluation`；无效结果返回 `400` |
 | `DELETE` | `/api/candidates/:id` | 管理员 | 删除候选人及关联记录 |
 | `POST` | `/api/candidates/:id/notes` | 管理员 | JSON：`authorId`, `authorName`, `content` |
 | `POST` | `/api/candidates/:id/join-confirm` | 学生 Token 或管理员 | 候选人确认已加入招新群；仅符合状态要求的候选人可执行 |
