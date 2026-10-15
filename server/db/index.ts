@@ -227,12 +227,17 @@ class Database {
   private init() {
     let removedPlaceholderQrCount = 0;
     let migratedPromptCount = 0;
+    const databaseExists = fs.existsSync(DB_FILE);
+
+    // Reject invalid first-run configuration before creating directories or files.
+    this.validateAuthSecretConfig();
+    if (!databaseExists) this.validateInitialAdminPassword();
 
     if (!fs.existsSync(DB_DIR)) {
       fs.mkdirSync(DB_DIR, { recursive: true, mode: 0o700 });
     }
 
-    if (fs.existsSync(DB_FILE)) {
+    if (databaseExists) {
       try {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
         const parsed: unknown = JSON.parse(raw);
@@ -331,6 +336,10 @@ class Database {
       this.seedInitialData();
     }
 
+    // Existing databases may predate mandatory admin passwords. Validate before
+    // persisting any migrations or generating a session signing secret.
+    if (databaseExists) this.validateInitialAdminPassword();
+
     if (removedPlaceholderQrCount > 0 || migratedPromptCount > 0) {
       this.save();
     }
@@ -342,15 +351,6 @@ class Database {
     }
 
     this.ensureAuthSecret();
-    if (!this.data.admin_passwords?.admin) {
-      if (!DEFAULT_ADMIN_PASSWORD) {
-        throw new Error('ADMIN_DEFAULT_PASSWORD must be set before starting with a new or passwordless database.');
-      }
-      const passwordError = getAdminPasswordPolicyError(DEFAULT_ADMIN_PASSWORD);
-      if (passwordError) {
-        throw new Error(`ADMIN_DEFAULT_PASSWORD ${passwordError}.`);
-      }
-    }
   }
 
   private save() {
@@ -376,14 +376,27 @@ class Database {
   // Signing key for admin session tokens. Persisted rather than held in memory so
   // tokens survive PM2's max_memory_restart restarts; AUTH_TOKEN_SECRET in the
   // environment always wins over the stored value.
-  private ensureAuthSecret() {
-    const configuredSecret = (process.env.AUTH_TOKEN_SECRET || '').trim();
-    if (configuredSecret) {
-      if (Buffer.byteLength(configuredSecret, 'utf8') < 32) {
-        throw new Error('AUTH_TOKEN_SECRET must be at least 32 bytes, or left empty to generate and persist a random secret.');
-      }
-      return;
+  private validateInitialAdminPassword() {
+    if (this.data.admin_passwords?.admin) return;
+    if (!DEFAULT_ADMIN_PASSWORD) {
+      throw new Error('ADMIN_DEFAULT_PASSWORD must be set before starting with a new or passwordless database.');
     }
+    const passwordError = getAdminPasswordPolicyError(DEFAULT_ADMIN_PASSWORD);
+    if (passwordError) {
+      throw new Error(`ADMIN_DEFAULT_PASSWORD ${passwordError}.`);
+    }
+  }
+
+  private validateAuthSecretConfig(): string {
+    const configuredSecret = (process.env.AUTH_TOKEN_SECRET || '').trim();
+    if (configuredSecret && Buffer.byteLength(configuredSecret, 'utf8') < 32) {
+      throw new Error('AUTH_TOKEN_SECRET must be at least 32 bytes, or left empty to generate and persist a random secret.');
+    }
+    return configuredSecret;
+  }
+
+  private ensureAuthSecret() {
+    if (this.validateAuthSecretConfig()) return;
     if (this.data.auth_secret) return;
     this.data.auth_secret = randomBytes(32).toString('base64url');
     this.save();
