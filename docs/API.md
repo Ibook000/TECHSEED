@@ -75,7 +75,7 @@ This reference describes the HTTP API implemented in `server.ts`. All routes use
 - The `:id` in `/api/candidates/:id` and `/api/interviews/:id` is the **candidate ID**, not an interview record ID.
 - Never put tokens in URLs. URLs can be recorded in browser history, proxy logs, and analytics systems.
 
-Only endpoints marked **Public** below work without an admin token. Student-token routes still verify the per-candidate token before exposing or changing private data.
+Endpoints marked **Public** require no token. Student-token routes do not need an admin token, but they do require the candidate-specific token described in the catalog. Admin routes require a valid admin token.
 
 ### Endpoint catalog
 
@@ -99,7 +99,7 @@ Only endpoints marked **Public** below work without an admin token. Student-toke
 | `DELETE` | `/api/candidates/:id` | Admin | Deletes the candidate and related records |
 | `POST` | `/api/candidates/:id/notes` | Admin | JSON: `authorId`, `authorName`, `content` |
 | `POST` | `/api/candidates/:id/join-confirm` | Student token or Admin | Confirms that the applicant joined the recruitment group; only eligible candidate states can use it |
-| `POST` | `/api/interviews` | Student token or Admin | JSON: `candidateId`; starts or resumes that candidate's interview |
+| `POST` | `/api/interviews` | Student token or Admin; rate limited | JSON: `candidateId`; starts or resumes that candidate's interview. Limits: 120 requests per IP per hour and 3 per candidate per 15 minutes |
 | `GET` | `/api/interviews/:id` | Student token or Admin | Returns the candidate's interview. Student responses omit internal analysis fields |
 | `POST` | `/api/interviews/:id/answer` | Student token or Admin; rate limited | JSON: `answer`, optional `submissionId`; answers are limited to 4,000 characters |
 | `POST` | `/api/interviews/:id/complete` | Student token or Admin; rate limited | Completes the interview and generates an evaluation. Returns `409` if no non-empty applicant answer was submitted |
@@ -123,5 +123,5 @@ Only endpoints marked **Public** below work without an admin token. Student-toke
 
 - Send JSON requests with `Content-Type: application/json`.
 - Common error statuses: `400` invalid parameters, `401` unauthenticated, `403` candidate is not eligible for the operation, `404` record not found, `409` state conflict or duplicate registration, `413` request too large, and `429` rate limit exceeded.
-- A `429` response includes `Retry-After`. Public registration, login, recovery, and interview submission routes are rate limited.
+- A `429` response includes `Retry-After`. Public registration, login, and recovery routes, as well as interview start, answer, and completion routes, are rate limited.
 - Candidate exports, evaluation reports, and admin routes contain sensitive data. Do not paste real responses into public issues, screenshots, or logs.
