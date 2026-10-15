@@ -718,10 +718,13 @@ class Database {
     return this.data.wechat_group_qrs;
   }
 
-  public saveWeChatQR(qr: WeChatGroupQR): WeChatGroupQR {
-    const existingIdx = this.data.wechat_group_qrs.findIndex(
-      q => q.id === qr.id || (qr.batchId && q.batchId === qr.batchId)
+  public saveWeChatQR(qr: WeChatGroupQR): WeChatGroupQR | null {
+    const idConflict = this.data.wechat_group_qrs.some(
+      q => q.id === qr.id && q.batchId !== qr.batchId
     );
+    if (idConflict) return null;
+
+    const existingIdx = this.data.wechat_group_qrs.findIndex(q => q.batchId === qr.batchId);
     if (existingIdx !== -1) {
       this.data.wechat_group_qrs[existingIdx] = {
         ...this.data.wechat_group_qrs[existingIdx],
