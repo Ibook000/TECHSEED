@@ -1,4 +1,11 @@
-import { CandidateProfile, InterviewMessage, AIEvaluation, CapabilityScores, TECHNICAL_FOUNDATION_OPTIONS, TECH_DIRECTION_OPTIONS } from '../../src/types.js';
+import {
+  CandidateProfile,
+  InterviewMessage,
+  AIEvaluation,
+  CapabilityScores,
+  TECHNICAL_FOUNDATION_OPTIONS,
+  TECH_DIRECTION_OPTIONS,
+} from '../../src/types.js';
 import { db } from '../db/index.js';
 import {
   calculateOverallScore,
@@ -10,17 +17,17 @@ import {
   redactKnownProfileIdentifiers,
 } from './evaluation.js';
 
-/**
- * Simple concurrency limiter for LLM calls.
- * Prevents API rate-limit errors when many candidates interview simultaneously.
- * Default: max 10 concurrent LLM requests; configurable via LLM_MAX_CONCURRENT env var.
- */
 function getPromptSafeProfileChoice(value: unknown, validOptions: readonly string[]): string {
   return typeof value === 'string' && validOptions.includes(value)
     ? value
     : '未提供或格式无效';
 }
 
+/**
+ * Simple concurrency limiter for LLM calls.
+ * Prevents API rate-limit errors when many candidates interview simultaneously.
+ * Default: max 10 concurrent LLM requests; configurable via LLM_MAX_CONCURRENT env var.
+ */
 class ConcurrencyLimiter {
   private maxConcurrent: number;
   private active = 0;
@@ -465,7 +472,6 @@ export class AIService {
       TECH_DIRECTION_OPTIONS,
     );
 
-
     const promptConfig = db.getPrompts().find(p => p.key === 'interviewer_system_prompt');
     const systemPrompt = promptConfig?.prompt || '你是高校技术部招新面试官，请向新生提出首个初筛问题。';
 
@@ -515,7 +521,6 @@ export class AIService {
       profile.techDirection,
       TECH_DIRECTION_OPTIONS,
     );
-
 
     const isLastRound = currentRound >= 4; // 4-5 rounds is ideal (8-12 min)
     const lastUserMsg = [...history].reverse().find(m => m.sender === 'candidate');

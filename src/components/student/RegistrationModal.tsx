@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { X, AlertCircle, Check } from 'lucide-react';
-import { CandidateProfile, TechnicalFoundation, TechDirection, REGISTRATION_CONSENT_VERSION, TECHNICAL_FOUNDATION_OPTIONS, TECH_DIRECTION_OPTIONS } from '../../types.js';
+import {
+  CandidateProfile,
+  TechnicalFoundation,
+  TechDirection,
+  REGISTRATION_CONSENT_VERSION,
+  TECHNICAL_FOUNDATION_OPTIONS,
+  TECH_DIRECTION_OPTIONS,
+} from '../../types.js';
 import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 import { PgyMascot } from '../PgyMascot.js';
 

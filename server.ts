@@ -8,7 +8,14 @@ import { RecruitmentService } from './server/services/recruitment.js';
 import { isManualReviewResult } from './server/services/manualReview.js';
 import { normalizeRouteParam } from './server/services/routeParams.js';
 import { HttpError } from './server/errors.js';
-import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION, TECHNICAL_FOUNDATION_OPTIONS, TECH_DIRECTION_OPTIONS } from './src/types.js';
+import {
+  CandidateProfile,
+  CandidateStatus,
+  CANDIDATE_STATUSES,
+  REGISTRATION_CONSENT_VERSION,
+  TECHNICAL_FOUNDATION_OPTIONS,
+  TECH_DIRECTION_OPTIONS,
+} from './src/types.js';
 import { getAdminPasswordPolicyError } from './src/lib/passwordPolicy.js';
 
 const app = express();
