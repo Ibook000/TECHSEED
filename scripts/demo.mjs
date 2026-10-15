@@ -74,8 +74,10 @@ if (!databaseExists) {
 
 console.log('TECHSEED local demo: http://127.0.0.1:' + process.env.PORT);
 console.log('Admin username: admin');
-if (existsSync(passwordPath)) {
-  console.log('Admin password: ' + adminPassword);
+if (!databaseExists) {
+  console.log('Initial admin password: ' + adminPassword);
+} else if (existsSync(passwordPath)) {
+  console.log('Initial password is saved in .demo-data/.admin-password; use it only if you have not changed the admin password.');
 } else {
   console.log('The saved initial password is missing; use the password you changed it to, or remove .demo-data to reset.');
 }
