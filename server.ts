@@ -12,6 +12,7 @@ import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CON
 import { getAdminPasswordPolicyError } from './src/lib/passwordPolicy.js';
 
 const app = express();
+const DEMO_MODE = process.env.TECHSEED_DEMO_MODE === 'true';
 app.disable('x-powered-by');
 
 function readIntegerEnv(name: string, fallback: number, min: number, max: number): number {
@@ -340,6 +341,15 @@ app.post('/api/auth/change-password', (req: Request, res: Response) => {
   if (!db.changePassword(cleanUser, cleanNew)) {
     return res.status(400).json({ success: false, error: '管理员密码未符合安全要求，修改失败' });
   }
+  if (DEMO_MODE) {
+    try {
+      fs.unlinkSync(path.join(process.cwd(), '.demo-data', '.admin-password'));
+    } catch (cleanupError) {
+      if ((cleanupError as NodeJS.ErrnoException).code !== 'ENOENT') {
+        console.warn('[Demo] Could not remove the initial demo password file:', cleanupError);
+      }
+    }
+  }
   return res.json({
     success: true,
     message: '后台管理密码已成功修改，其他登录会话已失效',
@@ -355,8 +365,19 @@ app.get('/api/auth/users', (_req: Request, res: Response) => {
 // Logo status and upload
 app.get('/api/logo-status', (_req: Request, res: Response) => {
   const publicLogoPath = path.join(process.cwd(), 'public', 'PGY_logo.png');
-  const exists = fs.existsSync(publicLogoPath);
-  res.json({ exists, url: exists ? '/PGY_logo.png' : null });
+  const demoLogoPath = path.join(process.cwd(), '.demo-data', 'PGY_logo.png');
+  const hasDemoLogo = DEMO_MODE && fs.existsSync(demoLogoPath);
+  const hasPublicLogo = fs.existsSync(publicLogoPath);
+  const exists = hasDemoLogo || hasPublicLogo;
+  const url = hasDemoLogo ? '/demo-logo' : hasPublicLogo ? '/PGY_logo.png' : null;
+  res.json({ exists, url });
+});
+
+app.get('/demo-logo', (_req: Request, res: Response) => {
+  if (!DEMO_MODE) return res.sendStatus(404);
+  const demoLogoPath = path.join(process.cwd(), '.demo-data', 'PGY_logo.png');
+  if (!fs.existsSync(demoLogoPath)) return res.sendStatus(404);
+  return res.sendFile(demoLogoPath);
 });
 
 app.post('/api/upload-logo', (req: Request, res: Response) => {
@@ -375,18 +396,23 @@ app.post('/api/upload-logo', (req: Request, res: Response) => {
     const buffer = Buffer.from(base64Data, 'base64');
 
     const publicDir = path.join(process.cwd(), 'public');
-    if (!fs.existsSync(publicDir)) {
+    if (!DEMO_MODE && !fs.existsSync(publicDir)) {
       fs.mkdirSync(publicDir, { recursive: true });
     }
-    const targetFile = path.join(publicDir, 'PGY_logo.png');
+    const targetFile = DEMO_MODE
+      ? path.join(process.cwd(), '.demo-data', 'PGY_logo.png')
+      : path.join(publicDir, 'PGY_logo.png');
     fs.writeFileSync(targetFile, buffer);
 
-    const distDir = path.join(process.cwd(), 'dist');
-    if (fs.existsSync(distDir)) {
-      fs.writeFileSync(path.join(distDir, 'PGY_logo.png'), buffer);
+    if (!DEMO_MODE) {
+      const distDir = path.join(process.cwd(), 'dist');
+      if (fs.existsSync(distDir)) {
+        fs.writeFileSync(path.join(distDir, 'PGY_logo.png'), buffer);
+      }
     }
 
-    return res.json({ success: true, url: '/PGY_logo.png?v=' + Date.now() });
+    const logoUrl = DEMO_MODE ? '/demo-logo' : '/PGY_logo.png';
+    return res.json({ success: true, url: logoUrl + '?v=' + Date.now() });
   } catch (err: any) {
     return respondWithRouteError(res, err, 'Logo upload', '上传 Logo 失败，请稍后重试');
   }
