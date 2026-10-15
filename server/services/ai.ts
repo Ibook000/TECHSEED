@@ -15,12 +15,10 @@ import {
  * Prevents API rate-limit errors when many candidates interview simultaneously.
  * Default: max 10 concurrent LLM requests; configurable via LLM_MAX_CONCURRENT env var.
  */
-function getPromptSafeProfileChoice(
-  value: string,
-  validOptions: readonly string[],
-  profile: CandidateProfile,
-): string {
-  return validOptions.includes(value) ? value : redactKnownProfileIdentifiers(value, profile);
+function getPromptSafeProfileChoice(value: unknown, validOptions: readonly string[]): string {
+  return typeof value === 'string' && validOptions.includes(value)
+    ? value
+    : '未提供或格式无效';
 }
 
 class ConcurrencyLimiter {
@@ -461,12 +459,10 @@ export class AIService {
     const technicalFoundation = getPromptSafeProfileChoice(
       profile.technicalFoundation,
       TECHNICAL_FOUNDATION_OPTIONS,
-      profile,
     );
     const techDirection = getPromptSafeProfileChoice(
       profile.techDirection,
       TECH_DIRECTION_OPTIONS,
-      profile,
     );
 
 
@@ -514,12 +510,10 @@ export class AIService {
     const technicalFoundation = getPromptSafeProfileChoice(
       profile.technicalFoundation,
       TECHNICAL_FOUNDATION_OPTIONS,
-      profile,
     );
     const techDirection = getPromptSafeProfileChoice(
       profile.techDirection,
       TECH_DIRECTION_OPTIONS,
-      profile,
     );
 
 
@@ -609,12 +603,10 @@ ${conversationHistory}
     const technicalFoundation = getPromptSafeProfileChoice(
       profile.technicalFoundation,
       TECHNICAL_FOUNDATION_OPTIONS,
-      profile,
     );
     const techDirection = getPromptSafeProfileChoice(
       profile.techDirection,
       TECH_DIRECTION_OPTIONS,
-      profile,
     );
 
 
