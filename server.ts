@@ -907,6 +907,7 @@ app.post('/api/wechat-qr', (req: Request, res: Response) => {
     updatedAt: new Date().toISOString(),
   });
 
+  if (!qr) return res.status(409).json({ error: '二维码编号已被其他批次使用' });
   res.json(qr);
 });
 

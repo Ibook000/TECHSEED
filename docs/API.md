@@ -49,7 +49,7 @@ This reference describes the HTTP API currently implemented by `server.ts`. All 
 | `GET` | `/api/wechat-qr?candidateId=:id` | 学生 Token 或管理员 | 获取该候选人所属批次的群二维码；资格不符时不会返回可用二维码 |
 | `GET` | `/api/wechat-qr?adminMode=true` | 管理员 | 返回所有批次的二维码 |
 | `GET` | `/api/wechat-qr?batchId=:id` | 管理员 | 返回指定批次的二维码；不带候选人 ID 的查询必须使用管理员 Token |
-| `POST` | `/api/wechat-qr` | 管理员 | JSON：必填 `imageUrl`（HTTPS URL 或 PNG/JPEG/WebP Base64 Data URL）；可选 `batchId`（默认当前启用批次）、`id`、`title`、未来时间的 `expiresAt` |
+| `POST` | `/api/wechat-qr` | 管理员 | JSON：必填 `imageUrl`（HTTPS URL 或 PNG/JPEG/WebP Base64 Data URL）；可选 `batchId`（默认当前启用批次）、`id`、`title`、未来时间的 `expiresAt`。`id` 已用于其他批次时返回 `409` |
 | `DELETE` | `/api/wechat-qr/:id` | 管理员 | 删除二维码；可用 `batchId` 限定批次 |
 | `GET` | `/api/prompts` | 管理员 | 列出 AI 提示词配置 |
 | `PATCH` | `/api/prompts/:id` | 管理员 | JSON：`prompt`, 可选 `updatedBy` |
@@ -111,7 +111,7 @@ Endpoints marked **Public** require no token. Student-token routes do not need a
 | `GET` | `/api/wechat-qr?candidateId=:id` | Student token or Admin | Returns the QR code for the candidate's batch; ineligible candidates do not receive a usable QR code |
 | `GET` | `/api/wechat-qr?adminMode=true` | Admin | Returns QR codes for all batches |
 | `GET` | `/api/wechat-qr?batchId=:id` | Admin | Returns the QR code for one batch. Queries without a candidate ID require an admin token |
-| `POST` | `/api/wechat-qr` | Admin | JSON: required `imageUrl` (HTTPS URL or PNG/JPEG/WebP base64 data URL); optional `batchId` (defaults to the active batch), `id`, `title`, and future `expiresAt` |
+| `POST` | `/api/wechat-qr` | Admin | JSON: required `imageUrl` (HTTPS URL or PNG/JPEG/WebP base64 data URL); optional `batchId` (defaults to the active batch), `id`, `title`, and future `expiresAt`. Returns `409` if `id` is already used by another batch |
 | `DELETE` | `/api/wechat-qr/:id` | Admin | Deletes a QR code. When `batchId` is supplied, both the QR ID and batch ID must match; a mismatch deletes nothing |
 | `GET` | `/api/prompts` | Admin | Lists AI prompt configurations |
 | `PATCH` | `/api/prompts/:id` | Admin | JSON: `prompt`, optional `updatedBy` |
