@@ -18,6 +18,8 @@
 3. 复制 `.env.example` 为 `.env`，设置 12–128 个字符的 `ADMIN_DEFAULT_PASSWORD`。
 4. 运行 `npm run dev` 启动本地开发服务。
 
+只想先体验后台、暂时不配置 `.env` 时，可在安装依赖后运行 `npm run demo`。它会在独立的 `.demo-data/` 中生成虚构报名流程，只监听本机；演示数据不要替换或混入正式报名数据。
+
 提交前运行：
 
 ```bash
@@ -31,7 +33,7 @@ Pull Request 的 GitHub Actions 会在 Node.js 22 和 24 上执行这些检查�
 
 ## 数据与隐私
 
-- 不要提交 `.env`、`data/db.json`、学生信息、AI 密钥或其他运行时数据。
+- 不要提交 `.env`、`data/db.json`、`.demo-data/`、学生信息、AI 密钥或其他运行时数据。
 - 新功能应尽量减少收集和暴露的个人信息；修改学生可见数据或 AI 处理流程时，请在说明中写明影响。
 - 修改报名信息用途说明时，请同步更新 `REGISTRATION_CONSENT_VERSION`，以便留存记录能对应到用户确认的文案版本。
 - 不要使用真实学生档案作为开发或演示数据。
@@ -52,6 +54,8 @@ Bug reports, documentation fixes, and code improvements are welcome. For small c
 3. Copy `.env.example` to `.env` and set a unique `ADMIN_DEFAULT_PASSWORD` of 12–128 characters.
 4. Run `npm run dev` to start the local development server.
 
+To preview the admin workflow before configuring `.env`, run `npm run demo` after installing dependencies. It creates fictional records in a separate `.demo-data/` directory, binds to localhost, and ignores AI provider settings from `.env`. Do not enter real applicant data in the demo.
+
 Run these checks before submitting:
 
 ```bash
@@ -65,7 +69,7 @@ GitHub Actions runs these checks on Node.js 22 and 24 and performs CodeQL static
 
 ### Data and privacy
 
-- Never commit `.env`, `data/db.json`, applicant information, AI keys, or other runtime data.
+- Never commit `.env`, `data/db.json`, `.demo-data/`, applicant information, AI keys, or other runtime data.
 - Minimize the collection and exposure of personal information. Explain the impact when changing applicant-facing data or AI processing.
 - If you change the purpose statement shown during registration, update `REGISTRATION_CONSENT_VERSION` so consent records stay linked to the correct text.
 - Never use real applicant records for development or demos.
