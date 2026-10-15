@@ -3,6 +3,10 @@ node_modules/
 build/
 dist/
 coverage/
+output/
+# npm run clean 会移除的旧版服务端构建产物
+/server.js
+
 # 运行时数据（JSON 文件数据库，含真实学生记录与凭据，禁止入库）
 data/
 
