@@ -3,8 +3,9 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'n
 import { join, relative } from 'node:path';
 
 const root = process.cwd();
-const databasePath = join(root, 'data', 'db.json');
-const backupDirectory = join(root, 'data', 'backups');
+const dataDirectory = process.env.TECHSEED_DEMO_MODE === 'true' ? '.demo-data' : 'data';
+const databasePath = join(root, dataDirectory, 'db.json');
+const backupDirectory = join(root, dataDirectory, 'backups');
 
 if (!existsSync(databasePath)) {
   console.error('找不到 data/db.json；请先启动一次服务以初始化数据库。');

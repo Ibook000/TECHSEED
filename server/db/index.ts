@@ -35,7 +35,11 @@ interface DatabaseSchema {
   ai_settings: AISettings;
 }
 
-const DB_DIR = path.join(process.cwd(), 'data');
+const DEMO_MODE = process.env.TECHSEED_DEMO_MODE === 'true';
+if (DEMO_MODE && process.env.TECHSEED_DATA_DIR?.trim()) {
+  throw new Error('TECHSEED_DEMO_MODE uses the isolated .demo-data directory and cannot be combined with TECHSEED_DATA_DIR.');
+}
+const DB_DIR = path.join(process.cwd(), DEMO_MODE ? '.demo-data' : 'data');
 const DB_FILE = path.join(DB_DIR, 'db.json');
 
 // A fresh DB has no built-in password. Set ADMIN_DEFAULT_PASSWORD before first startup;
