@@ -1,4 +1,4 @@
-import { CandidateProfile, InterviewMessage, AIEvaluation, CapabilityScores } from '../../src/types.js';
+import { CandidateProfile, InterviewMessage, AIEvaluation, CapabilityScores, TECHNICAL_FOUNDATION_OPTIONS, TECH_DIRECTION_OPTIONS } from '../../src/types.js';
 import { db } from '../db/index.js';
 import {
   calculateOverallScore,
@@ -15,6 +15,14 @@ import {
  * Prevents API rate-limit errors when many candidates interview simultaneously.
  * Default: max 10 concurrent LLM requests; configurable via LLM_MAX_CONCURRENT env var.
  */
+function getPromptSafeProfileChoice(
+  value: string,
+  validOptions: readonly string[],
+  profile: CandidateProfile,
+): string {
+  return validOptions.includes(value) ? value : redactKnownProfileIdentifiers(value, profile);
+}
+
 class ConcurrencyLimiter {
   private maxConcurrent: number;
   private active = 0;
@@ -450,18 +458,30 @@ export class AIService {
    * Generates the initial interview opening question based on candidate profile.
    */
   public static async generateOpeningQuestion(profile: CandidateProfile): Promise<string> {
+    const technicalFoundation = getPromptSafeProfileChoice(
+      profile.technicalFoundation,
+      TECHNICAL_FOUNDATION_OPTIONS,
+      profile,
+    );
+    const techDirection = getPromptSafeProfileChoice(
+      profile.techDirection,
+      TECH_DIRECTION_OPTIONS,
+      profile,
+    );
+
+
     const promptConfig = db.getPrompts().find(p => p.key === 'interviewer_system_prompt');
     const systemPrompt = promptConfig?.prompt || '你是高校技术部招新面试官，请向新生提出首个初筛问题。';
 
     const userPrompt = `候选人基本信息：
-- 技术基础: ${profile.technicalFoundation}
-- 期望方向: ${profile.techDirection}
+- 技术基础: ${technicalFoundation}
+- 期望方向: ${techDirection}
 - 个人自我介绍: "${redactKnownProfileIdentifiers(profile.selfIntro, profile)}"
 
 系统已对自由文本中可匹配的已知身份信息做脱敏处理。请根据技术基础、方向和自我介绍提出第一个破冰/初筛提问；不要询问或输出个人身份信息。
 要求：
 1. 语言亲切、专业、像师兄师姐交流，避免僵硬的高考式提问；
-2. 针对他自我介绍中提到的细节或他对${profile.techDirection}方向的兴趣出发；
+2. 针对他自我介绍中提到的细节或他对${techDirection}方向的兴趣出发；
 3. 如果是零基础，不要考背诵概念，而是问他是什么契机让他想要探索技术/折腾；
 4. 直接返回问题正文，不需要寒暄过多废话，字数在60-120字之间。`;
 
@@ -491,6 +511,18 @@ export class AIService {
     history: InterviewMessage[],
     currentRound: number
   ): Promise<{ question: string; analysis: string; isLastRound: boolean }> {
+    const technicalFoundation = getPromptSafeProfileChoice(
+      profile.technicalFoundation,
+      TECHNICAL_FOUNDATION_OPTIONS,
+      profile,
+    );
+    const techDirection = getPromptSafeProfileChoice(
+      profile.techDirection,
+      TECH_DIRECTION_OPTIONS,
+      profile,
+    );
+
+
     const isLastRound = currentRound >= 4; // 4-5 rounds is ideal (8-12 min)
     const lastUserMsg = [...history].reverse().find(m => m.sender === 'candidate');
     const answerText = lastUserMsg?.content || '';
@@ -505,7 +537,7 @@ export class AIService {
     const userPrompt = `${followupPrompt}
 
 【候选人信息】
-技术基础: ${profile.technicalFoundation}, 方向: ${profile.techDirection}
+技术基础: ${technicalFoundation}, 方向: ${techDirection}
 自我介绍: ${redactKnownProfileIdentifiers(profile.selfIntro, profile)}
 
 系统已对自由文本中可匹配的已知身份信息做脱敏处理。不要询问或输出个人身份信息。
@@ -574,6 +606,18 @@ ${conversationHistory}
     profile: CandidateProfile,
     messages: InterviewMessage[]
   ): Promise<AIEvaluation> {
+    const technicalFoundation = getPromptSafeProfileChoice(
+      profile.technicalFoundation,
+      TECHNICAL_FOUNDATION_OPTIONS,
+      profile,
+    );
+    const techDirection = getPromptSafeProfileChoice(
+      profile.techDirection,
+      TECH_DIRECTION_OPTIONS,
+      profile,
+    );
+
+
     if (!hasCandidateAnswers(messages)) {
       throw new Error('Cannot evaluate an interview without a candidate answer.');
     }
@@ -588,8 +632,8 @@ ${conversationHistory}
     const userPrompt = `${evalPrompt}
 
 【候选人信息】
-技术基础: ${profile.technicalFoundation}
-技术方向兴趣: ${profile.techDirection}
+技术基础: ${technicalFoundation}
+技术方向兴趣: ${techDirection}
 个人介绍: ${redactKnownProfileIdentifiers(profile.selfIntro, profile)}
 
 系统已对自由文本中可匹配的已知身份信息做脱敏处理。不得猜测或要求个人身份信息。

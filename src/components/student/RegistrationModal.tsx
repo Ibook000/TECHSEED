@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, AlertCircle, Check } from 'lucide-react';
-import { CandidateProfile, TechnicalFoundation, TechDirection, REGISTRATION_CONSENT_VERSION } from '../../types.js';
+import { CandidateProfile, TechnicalFoundation, TechDirection, REGISTRATION_CONSENT_VERSION, TECHNICAL_FOUNDATION_OPTIONS, TECH_DIRECTION_OPTIONS } from '../../types.js';
 import { useModalAccessibility } from '../../lib/useModalAccessibility.js';
 import { PgyMascot } from '../PgyMascot.js';
 
@@ -10,26 +10,6 @@ interface RegistrationModalProps {
   onClose: () => void;
   onSubmit: (profile: CandidateProfile, privacyConsentVersion: string) => Promise<void>;
 }
-
-const FOUNDATIONS: TechnicalFoundation[] = [
-  '完全没有',
-  '了解一点',
-  '有基础',
-  '可以独立写简单程序',
-  '有项目经验',
-];
-
-const DIRECTIONS: TechDirection[] = [
-  'Web 前端',
-  '后端',
-  'AI',
-  '算法',
-  '嵌入式',
-  '硬件',
-  'UI / UX',
-  '产品',
-  '暂时不确定',
-];
 
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   batchYear,
@@ -233,7 +213,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <span className="text-[10px] text-amber-700 font-mono">「完全没有」不作为减分项</span>
               </div>
               <div role="group" aria-labelledby="registration-foundation-label" className="mt-1.5 grid grid-cols-2 sm:grid-cols-5 gap-1.5 sm:gap-2">
-                {FOUNDATIONS.map(f => (
+                {TECHNICAL_FOUNDATION_OPTIONS.map(f => (
                   <button
                     type="button"
                     key={f}
@@ -255,7 +235,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <div>
               <span id="registration-direction-label" className="block text-[11px] text-zinc-600 font-medium tracking-wider">期望加入的技术方向</span>
               <div role="group" aria-labelledby="registration-direction-label" className="mt-1.5 flex flex-wrap gap-1.5 sm:gap-2">
-                {DIRECTIONS.map(d => (
+                {TECH_DIRECTION_OPTIONS.map(d => (
                   <button
                     type="button"
                     key={d}

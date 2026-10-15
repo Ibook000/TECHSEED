@@ -59,6 +59,9 @@ This reference describes the HTTP API currently implemented by `server.ts`. All 
 
 ### 请求与错误
 
+- 报名资料中的 `technicalFoundation` 必须为：`完全没有`、`了解一点`、`有基础`、`可以独立写简单程序`、`有项目经验`。
+- `techDirection` 必须为：`Web 前端`、`后端`、`AI`、`算法`、`嵌入式`、`硬件`、`UI / UX`、`产品`、`暂时不确定`。不支持的值返回 `400`。
+
 - JSON 请求使用 `Content-Type: application/json`。
 - 常见错误状态：`400` 参数无效、`401` 未认证、`403` 无候选人操作资格、`404` 记录不存在、`409` 状态冲突或重复报名、`413` 请求内容过大、`429` 请求过于频繁。
 - `429` 响应包含 `Retry-After`。公开报名、登录、找回和面试提交接口均有限流。
@@ -120,6 +123,9 @@ Endpoints marked **Public** require no token. Student-token routes do not need a
 | `GET` | `/api/export/candidates.csv` | Admin | Optional `batchId` scopes the export. The CSV contains applicant personal information |
 
 ### Requests and errors
+
+- In a registration profile, `technicalFoundation` must be one of: `完全没有`, `了解一点`, `有基础`, `可以独立写简单程序`, or `有项目经验`.
+- `techDirection` must be one of: `Web 前端`, `后端`, `AI`, `算法`, `嵌入式`, `硬件`, `UI / UX`, `产品`, or `暂时不确定`. Unsupported values return `400`.
 
 - Send JSON requests with `Content-Type: application/json`.
 - Common error statuses: `400` invalid parameters, `401` unauthenticated, `403` candidate is not eligible for the operation, `404` record not found, `409` state conflict or duplicate registration, `413` request too large, and `429` rate limit exceeded.
