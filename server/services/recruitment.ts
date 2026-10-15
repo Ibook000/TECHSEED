@@ -45,8 +45,7 @@ export class RecruitmentService {
     const effectiveBatchId = batchId || 'default';
 
     // Check if student already registered
-    const existing = db.findCandidateByStudentId(profile.studentId, effectiveBatchId) ||
-      db.getCandidates().find(c => c.profile.studentId === profile.studentId);
+    const existing = db.findCandidateByStudentId(profile.studentId, effectiveBatchId);
 
     if (existing) {
       return { candidate: existing, isNew: false };
