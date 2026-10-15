@@ -26,7 +26,7 @@ This reference describes the HTTP API currently implemented by `server.ts`. All 
 | `GET` | `/api/logo-status` | 公开 | 返回当前组织 Logo 是否存在 |
 | `POST` | `/api/upload-logo` | 管理员 | JSON：`dataUrl`，上传组织 Logo |
 | `POST` | `/api/admin/clear-data` | 管理员 | JSON：`batchId`；删除指定批次的候选人及关联记录 |
-| `POST` | `/api/candidates` | 公开；限流 | JSON：`profile`, `batchId`, `privacyConsentVersion`；成功返回 `201`、候选人资料和学生 Token。重复报名返回 `409` |
+| `POST` | `/api/candidates` | 公开；限流 | JSON：`profile`, `batchId`, `privacyConsentVersion`；成功返回 `201`、候选人资料和学生 Token。同一批次内学号重复时返回 `409`；同一学号可在不同批次重新报名。进度找回遇到多批次记录时返回最近一次报名 |
 | `POST` | `/api/student/recover` | 公开；限流 | JSON：`studentId`, `name`, `phone`；验证后返回候选人资料、面试记录和轮换后的学生 Token |
 | `GET` | `/api/candidates` | 管理员 | 支持 `batchId`, `search`, `status`, `grade`, `techDirection`, `sortField`, `sortOrder`, `minScore` 查询参数 |
 | `GET` | `/api/candidates/:id` | 学生 Token 或管理员 | 返回候选人资料及面试；学生视图会隐藏联系方式和内部评估信息 |
