@@ -99,7 +99,7 @@ Endpoints marked **Public** require no token. Student-token routes do not need a
 | `DELETE` | `/api/candidates/:id` | Admin | Deletes the candidate and related records |
 | `POST` | `/api/candidates/:id/notes` | Admin | JSON: `authorId`, `authorName`, `content` |
 | `POST` | `/api/candidates/:id/join-confirm` | Student token or Admin | Confirms that the applicant joined the recruitment group; only eligible candidate states can use it |
-| `POST` | `/api/interviews` | Student token or Admin; rate limited | JSON: `candidateId`; starts or resumes that candidate's interview. Limits: 120 requests per IP per hour and 3 per candidate per 15 minutes |
+| `POST` | `/api/interviews` | Student token or Admin; rate limited | JSON: `candidateId`; starts or resumes that candidate's interview. Limits: 120 requests per IP per hour and 3 requests per candidate per IP per 15 minutes |
 | `GET` | `/api/interviews/:id` | Student token or Admin | Returns the candidate's interview. Student responses omit internal analysis fields |
 | `POST` | `/api/interviews/:id/answer` | Student token or Admin; rate limited | JSON: `answer`, optional `submissionId`; answers are limited to 4,000 characters |
 | `POST` | `/api/interviews/:id/complete` | Student token or Admin; rate limited | Completes the interview and generates an evaluation. Returns `409` if no non-empty applicant answer was submitted |
