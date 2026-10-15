@@ -530,8 +530,20 @@ class Database {
   public findCandidateByStudentId(studentId: string, batchId?: string): Candidate | undefined {
     const cleanId = String(studentId || '').trim();
     if (!cleanId) return undefined;
-    return this.data.candidates.find(c => c.profile.studentId === cleanId && (!batchId || c.batchId === batchId)) ||
-           this.data.candidates.find(c => c.profile.studentId === cleanId);
+
+    const matches = this.data.candidates.filter(candidate =>
+      candidate.profile.studentId === cleanId &&
+      (!batchId || (candidate.batchId || 'default') === batchId)
+    );
+
+    if (batchId) return matches[0];
+
+    // Candidate records are inserted newest-first, but use the timestamp explicitly
+    // so recovery stays correct if a database was reordered by an import or migration.
+    return matches.reduce<Candidate | undefined>((latest, candidate) => {
+      if (!latest) return candidate;
+      return Date.parse(candidate.registeredAt) > Date.parse(latest.registeredAt) ? candidate : latest;
+    }, undefined);
   }
 
   public createCandidate(candidate: Candidate): Candidate {
