@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "demo": "node --import tsx scripts/demo.mjs",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node scripts/start-production.mjs",
     "backup": "node scripts/backup-db.mjs",

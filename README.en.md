@@ -57,6 +57,18 @@ npm run dev
 
 Open <http://localhost:3000>. The admin console is at <http://localhost:3000/admin>. The server creates `data/db.json` on first startup; this runtime data is excluded from version control.
 
+### Local demo
+
+To preview the admin console and the recruitment workflow with synthetic records:
+
+```bash
+npm run demo
+```
+
+The demo listens on `127.0.0.1:3000` and uses a separate `.demo-data/` directory. It does not read or modify the production `data/` database. On first run it creates fictional applicants, interviews, and review records. The admin username is `admin`; a random initial password is printed on first run and saved to `.demo-data/.admin-password`. Changing the admin password deletes this initial-password file. The launcher ignores AI provider settings from `.env`. A fresh demo database uses local heuristic scoring and makes no model API calls by default; external requests are made only if you configure a provider in the demo admin console.
+
+All sample records are clearly marked as synthetic. Never put real applicant information into the demo database. To reset the demo, stop the server and remove the entire `.demo-data/` directory. Do not use it as a production data directory.
+
 Useful commands:
 
 ```bash

@@ -7,3 +7,4 @@ output/
 coverage/
 *.log
 .DS_Store
+.demo-data/

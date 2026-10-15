@@ -9,6 +9,7 @@ output/
 
 # 运行时数据（JSON 文件数据库，含真实学生记录与凭据，禁止入库）
 data/
+.demo-data/
 
 # 环境变量与密钥
 .env*
