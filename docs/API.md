@@ -66,13 +66,62 @@ This reference describes the HTTP API currently implemented by `server.ts`. All 
 
 ## English
 
+This reference describes the HTTP API implemented in `server.ts`. All routes use the web app's origin and the `/api` prefix.
+
 ### Authentication
 
-- **Admin routes:** call `POST /api/auth/login`, then send its token as `Authorization: Bearer <token>`. Admin tokens expire after 12 hours.
-- **Applicant routes:** registration and account recovery return a `studentToken`. Send it as `X-Student-Token: <studentToken>`. Recovery rotates the token and invalidates the previous one.
-- The `:id` in `/api/candidates/:id` and `/api/interviews/:id` is the **candidate ID**.
+- **Admin routes:** call `POST /api/auth/login`, then send its token in `Authorization: Bearer <token>`. Tokens expire after 12 hours. Missing or invalid admin tokens return `401`.
+- **Applicant-specific routes:** registration and account recovery return a `studentToken`. Send it in `X-Student-Token: <studentToken>`. Recovery rotates the token and invalidates the previous one.
+- The `:id` in `/api/candidates/:id` and `/api/interviews/:id` is the **candidate ID**, not an interview record ID.
 - Never put tokens in URLs. URLs can be recorded in browser history, proxy logs, and analytics systems.
 
-The endpoint table above lists all routes and their access requirements. Public student routes still verify the per-candidate token before exposing or changing private data. Admin-only routes require a valid admin token.
+Only endpoints marked **Public** below work without an admin token. Student-token routes still verify the per-candidate token before exposing or changing private data.
 
-All JSON endpoints accept `Content-Type: application/json`. Common error statuses are `400`, `401`, `403`, `404`, `409`, `413`, and `429`; rate-limited responses include `Retry-After`. The CSV export and evaluation reports contain sensitive applicant data and must be handled as confidential records.
+### Endpoint catalog
+
+| Method | Path | Access | Notes / main parameters |
+| --- | --- | --- | --- |
+| `GET` | `/api/health` | Public | Returns service status and a timestamp |
+| `POST` | `/api/auth/login` | Public; rate limited | JSON: `username`, `password`. Returns the token, user, and expiry on success |
+| `POST` | `/api/auth/change-password` | Admin | JSON: `username`, `oldPassword`, `newPassword`. Revokes old sessions and returns a new token |
+| `GET` | `/api/auth/users` | Admin | Returns the administrator account list |
+| `GET` | `/api/logo-status` | Public | Reports whether an organization logo is available |
+| `POST` | `/api/upload-logo` | Admin | JSON: `dataUrl`; uploads the organization logo |
+| `POST` | `/api/admin/clear-data` | Admin | JSON: `batchId`; deletes candidates and related records for that batch |
+| `POST` | `/api/candidates` | Public; rate limited | JSON: `profile`, `batchId`, `privacyConsentVersion`. Returns `201`, the candidate, and a student token. Duplicate student IDs within a batch return `409`; the same student may apply in another batch. Recovery selects the most recent registration across batches |
+| `POST` | `/api/student/recover` | Public; rate limited | JSON: `studentId`, `name`, `phone`. On verification, returns the candidate, interview, and a rotated student token |
+| `GET` | `/api/candidates` | Admin | Query parameters: `batchId`, `search`, `status`, `grade`, `techDirection`, `sortField`, `sortOrder`, `minScore` |
+| `GET` | `/api/candidates/:id` | Student token or Admin | Returns the candidate and interview. Student responses hide contact details and internal assessment fields |
+| `PATCH` | `/api/candidates/:id/status` | Admin | JSON: target `status`; optional `operator`, `reason` |
+| `POST` | `/api/candidates/:id/admit` | Admin | JSON: optional `operator`, `comment`; records a manual admission decision |
+| `POST` | `/api/candidates/:id/reject` | Admin | JSON: optional `operator`, `reason`; records a manual review result |
+| `POST` | `/api/candidates/:id/manual-review` | Admin | JSON: `result` accepts only `PASSED` or `REJECTED`, plus `reviewerName`, `overallEvaluation`. Invalid results return `400` |
+| `DELETE` | `/api/candidates/:id` | Admin | Deletes the candidate and related records |
+| `POST` | `/api/candidates/:id/notes` | Admin | JSON: `authorId`, `authorName`, `content` |
+| `POST` | `/api/candidates/:id/join-confirm` | Student token or Admin | Confirms that the applicant joined the recruitment group; only eligible candidate states can use it |
+| `POST` | `/api/interviews` | Student token or Admin | JSON: `candidateId`; starts or resumes that candidate's interview |
+| `GET` | `/api/interviews/:id` | Student token or Admin | Returns the candidate's interview. Student responses omit internal analysis fields |
+| `POST` | `/api/interviews/:id/answer` | Student token or Admin; rate limited | JSON: `answer`, optional `submissionId`; answers are limited to 4,000 characters |
+| `POST` | `/api/interviews/:id/complete` | Student token or Admin; rate limited | Completes the interview and generates an evaluation. Returns `409` if no non-empty applicant answer was submitted |
+| `GET` | `/api/evaluations/:candidateId` | Admin | Returns the full AI evaluation report |
+| `GET` | `/api/dashboard/stats` | Admin | Optional `batchId` limits statistics to one batch |
+| `GET` | `/api/recruitment-batches` | Public | Returns the recruitment batch list |
+| `POST` | `/api/recruitment-batches` | Admin | Creates a batch; requires a batch name and year |
+| `PATCH` | `/api/recruitment-batches/:id/active` | Admin | Activates the specified batch |
+| `GET` | `/api/wechat-qr?candidateId=:id` | Student token or Admin | Returns the QR code for the candidate's batch; ineligible candidates do not receive a usable QR code |
+| `GET` | `/api/wechat-qr?adminMode=true` | Admin | Returns QR codes for all batches |
+| `GET` | `/api/wechat-qr?batchId=:id` | Admin | Returns the QR code for one batch. Queries without a candidate ID require an admin token |
+| `POST` | `/api/wechat-qr` | Admin | Creates or updates a QR code; supports a batch, title, and expiry |
+| `DELETE` | `/api/wechat-qr/:id` | Admin | Deletes a QR code; optional `batchId` scopes the deletion |
+| `GET` | `/api/prompts` | Admin | Lists AI prompt configurations |
+| `PATCH` | `/api/prompts/:id` | Admin | JSON: `prompt`, optional `updatedBy` |
+| `GET` | `/api/ai-settings` | Admin | Returns AI configuration status; API keys are masked |
+| `PATCH` | `/api/ai-settings` | Admin | Updates the primary or fallback model; API keys are never returned in plaintext |
+| `GET` | `/api/export/candidates.csv` | Admin | Optional `batchId` scopes the export. The CSV contains applicant personal information |
+
+### Requests and errors
+
+- Send JSON requests with `Content-Type: application/json`.
+- Common error statuses: `400` invalid parameters, `401` unauthenticated, `403` candidate is not eligible for the operation, `404` record not found, `409` state conflict or duplicate registration, `413` request too large, and `429` rate limit exceeded.
+- A `429` response includes `Retry-After`. Public registration, login, recovery, and interview submission routes are rate limited.
+- Candidate exports, evaluation reports, and admin routes contain sensitive data. Do not paste real responses into public issues, screenshots, or logs.

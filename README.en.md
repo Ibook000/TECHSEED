@@ -104,4 +104,6 @@ The service is published on `127.0.0.1:3000` by default. Put it behind an HTTPS 
 
 ## Contributing and security
 
+For endpoint details, see the [English API reference](docs/API.md#english).
+
 Issues and pull requests are welcome. See [Contributing](CONTRIBUTING.md) before making changes. Please report security issues privately; see [Security](SECURITY.md). Never include real applicant records, passwords, API keys, access tokens, `.env` files, or database backups in issues or pull requests.
