@@ -112,7 +112,7 @@ Endpoints marked **Public** require no token. Student-token routes do not need a
 | `GET` | `/api/wechat-qr?adminMode=true` | Admin | Returns QR codes for all batches |
 | `GET` | `/api/wechat-qr?batchId=:id` | Admin | Returns the QR code for one batch. Queries without a candidate ID require an admin token |
 | `POST` | `/api/wechat-qr` | Admin | Creates or updates a QR code; supports a batch, title, and expiry |
-| `DELETE` | `/api/wechat-qr/:id` | Admin | Deletes a QR code; optional `batchId` scopes the deletion |
+| `DELETE` | `/api/wechat-qr/:id` | Admin | Deletes a QR code. When `batchId` is supplied, both the QR ID and batch ID must match; a mismatch deletes nothing |
 | `GET` | `/api/prompts` | Admin | Lists AI prompt configurations |
 | `PATCH` | `/api/prompts/:id` | Admin | JSON: `prompt`, optional `updatedBy` |
 | `GET` | `/api/ai-settings` | Admin | Returns AI configuration status; API keys are masked |

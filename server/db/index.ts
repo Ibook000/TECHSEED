@@ -740,9 +740,10 @@ class Database {
   public deleteWeChatQR(id?: string, batchId?: string): boolean {
     const prevLen = this.data.wechat_group_qrs.length;
     this.data.wechat_group_qrs = this.data.wechat_group_qrs.filter(q => {
-      if (id && q.id === id) return false;
-      if (batchId && q.batchId === batchId) return false;
-      return true;
+      const hasScope = Boolean(id || batchId);
+      const matchesId = !id || q.id === id;
+      const matchesBatch = !batchId || q.batchId === batchId;
+      return !hasScope || !(matchesId && matchesBatch);
     });
     this.save();
     return this.data.wechat_group_qrs.length < prevLen;
