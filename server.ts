@@ -198,6 +198,7 @@ function rateLimit(name: string, maxRequests: number, windowMs: number, keySuffi
 
 const loginRateLimit = rateLimit('admin-login', 10, 15 * 60 * 1000);
 const registrationRateLimit = rateLimit('candidate-registration', 60, 60 * 60 * 1000);
+const demoLogoRateLimit = rateLimit('demo-logo', 300, 60 * 1000);
 const recoveryRateLimit = rateLimit('student-recovery-ip', 30, 15 * 60 * 1000);
 const recoveryCandidateRateLimit = rateLimit('student-recovery-id', 5, 15 * 60 * 1000, req => String(req.body?.studentId || '').trim().slice(0, 100));
 const interviewStartRateLimit = rateLimit('interview-start-ip', 120, 60 * 60 * 1000);
@@ -373,7 +374,7 @@ app.get('/api/logo-status', (_req: Request, res: Response) => {
   res.json({ exists, url });
 });
 
-app.get('/demo-logo', (_req: Request, res: Response) => {
+app.get('/demo-logo', demoLogoRateLimit, (_req: Request, res: Response) => {
   if (!DEMO_MODE) return res.sendStatus(404);
   const demoLogoPath = path.join(process.cwd(), '.demo-data', 'PGY_logo.png');
   if (!fs.existsSync(demoLogoPath)) return res.sendStatus(404);
