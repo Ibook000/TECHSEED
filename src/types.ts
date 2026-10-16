@@ -26,23 +26,27 @@ export interface CandidatePrivacyConsent {
 
 export type AIRecommendationGrade = 'S' | 'A' | 'B' | 'C';
 
-export type TechnicalFoundation =
-  | '完全没有'
-  | '了解一点'
-  | '有基础'
-  | '可以独立写简单程序'
-  | '有项目经验';
+export const TECHNICAL_FOUNDATION_OPTIONS = [
+  '完全没有',
+  '了解一点',
+  '有基础',
+  '可以独立写简单程序',
+  '有项目经验',
+] as const;
+export type TechnicalFoundation = (typeof TECHNICAL_FOUNDATION_OPTIONS)[number];
 
-export type TechDirection =
-  | 'Web 前端'
-  | '后端'
-  | 'AI'
-  | '算法'
-  | '嵌入式'
-  | '硬件'
-  | 'UI / UX'
-  | '产品'
-  | '暂时不确定';
+export const TECH_DIRECTION_OPTIONS = [
+  'Web 前端',
+  '后端',
+  'AI',
+  '算法',
+  '嵌入式',
+  '硬件',
+  'UI / UX',
+  '产品',
+  '暂时不确定',
+] as const;
+export type TechDirection = (typeof TECH_DIRECTION_OPTIONS)[number];
 
 export type UserRole = 'ADMIN';
 

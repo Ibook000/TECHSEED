@@ -8,11 +8,20 @@ import { RecruitmentService } from './server/services/recruitment.js';
 import { isManualReviewResult } from './server/services/manualReview.js';
 import { normalizeRouteParam } from './server/services/routeParams.js';
 import { HttpError } from './server/errors.js';
-import { CandidateProfile, CandidateStatus, CANDIDATE_STATUSES, REGISTRATION_CONSENT_VERSION } from './src/types.js';
+import {
+  CandidateProfile,
+  CandidateStatus,
+  CANDIDATE_STATUSES,
+  REGISTRATION_CONSENT_VERSION,
+  TECHNICAL_FOUNDATION_OPTIONS,
+  TECH_DIRECTION_OPTIONS,
+} from './src/types.js';
 import { getAdminPasswordPolicyError } from './src/lib/passwordPolicy.js';
 
 const app = express();
 const DEMO_MODE = process.env.TECHSEED_DEMO_MODE === 'true';
+const TECHNICAL_FOUNDATION_VALUES = new Set<string>(TECHNICAL_FOUNDATION_OPTIONS);
+const TECH_DIRECTION_VALUES = new Set<string>(TECH_DIRECTION_OPTIONS);
 app.disable('x-powered-by');
 
 function readIntegerEnv(name: string, fallback: number, min: number, max: number): number {
@@ -466,6 +475,9 @@ app.post('/api/candidates', registrationRateLimit, (req: Request, res: Response)
     }
     if (!profile.name || !profile.studentId || !profile.phone) {
       return res.status(400).json({ error: '请完整填写姓名、学号、手机号等必填字段' });
+    }
+    if (!TECHNICAL_FOUNDATION_VALUES.has(profile.technicalFoundation) || !TECH_DIRECTION_VALUES.has(profile.techDirection)) {
+      return res.status(400).json({ error: '技术基础或期望方向无效，请从表单选项中选择' });
     }
     if (batchId !== undefined && (typeof batchId !== 'string' || batchId.length > 100)) {
       return res.status(400).json({ error: '招新批次无效' });
