@@ -31,7 +31,7 @@
     "@types/react-dom": "^19.3.0",
     "canvas-confetti": "^1.9.4",
     "esbuild": "^0.28.2",
-    "lucide-react": "^0.546.0",
+    "lucide-react": "^1.57.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "recharts": "^3.10.1",
